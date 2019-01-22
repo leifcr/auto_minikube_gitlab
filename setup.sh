@@ -7,6 +7,12 @@ rm ~/.config/VirtualBox/HostInterfaceNetworking-vboxnet0*
 
 # Copy certificates
 
+mkdir -p ~/.minikube/certs
+cp ./certs/minikube-self-ca.crt ~/.minikube/certs/ca.pem
+cp ./certs/minikube-self-ca.key ~/.minikube/certs/ca-key.pem
+cp ./certs/minikube-self-ca.crt ~/.minikube/ca.crt
+cp ./certs/minikube-self-ca.key ~/.minikube/ca.key
+
 # Start minikube
 minikube start
 minikube ip
