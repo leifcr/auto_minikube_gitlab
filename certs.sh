@@ -12,7 +12,7 @@ IP=$1
 mkdir -p ./certs
 cd ./certs
 # Only create CA unless it exists
-if [ ! -f minikube-self-ca.pem ]; then
+if [ ! -f minikube-self-ca.crt ]; then
 
   # Creating CA
   openssl genrsa -out minikube-self-ca.key 2048
@@ -81,10 +81,10 @@ EOF
 
   # If certificates exists, delete ?
   openssl genrsa -out $IP-nip.key 2048
-  openssl req -new -key $IP-nip.key -out $IP-nip.csr -subj "/CN=$IP.nip.io/O=Kubernetes Minikube Gitlab Testing./ST=Castle/L=Across Water/OU=Office/C=DK"
+  openssl req -new -key $IP-nip.key -out $IP-nip.csr -subj "/CN=*.$IP.nip.io/O=Kubernetes Minikube Gitlab Testing./ST=Castle/L=Across Water/OU=Office/C=DK"
 
   openssl x509 -req -in $IP-nip.csr -CA minikube-self-ca.crt -CAkey minikube-self-ca.key -CAcreateserial -out $IP-nip.crt -days 1825 -sha256 -extfile $IP-nip.ext -extensions req_ext
-  openssl x509 -in $IP-nip.crt -text -noout
+  # openssl x509 -in $IP-nip.crt -text -noout
 
   # openssl x509 -inform der -in $IP-nip.crt -out $IP-nip.pem
 
@@ -95,7 +95,7 @@ EOF
   # openssl x509 -inform der -in apiserver.crt -out apiserver.pem
 
   echo "\nCertificate created for"
-  echo "$IP"
+  echo "*.$IP.nip.io"
   echo "$IP.nip.io"
   echo "gitlab.$IP.nip.io"
   echo "minio.$IP.nip.io"
@@ -104,7 +104,10 @@ EOF
   echo "app2.$IP.nip.io"
   echo "service1.$IP.nip.io"
   echo "service2.$IP.nip.io"
-  echo "dashboard.$IP.nip.io\n"
+  echo "dashboard.$IP.nip.io"
+  echo "$IP"
+  echo "10.96.0.1"
+  echo "10.0.0.1\n"
 
   cat $IP-nip.crt > $IP-nip.fullchain.crt
   cat minikube-self-ca.crt >> $IP-nip.fullchain.crt
@@ -113,5 +116,3 @@ else
 fi
 
 cd ..
-
-echo "\nRemember to install the CA certs where needed (likely on your devel computer)"
