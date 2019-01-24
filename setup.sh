@@ -72,7 +72,7 @@ cp dashboard-ingress_template.yaml dashboard-ingress.yaml
 sed -i "s/__IP__/$IP/g" dashboard-ingress.yaml
 
 # Create dashboard ingress
-kubectl create -f dashboard-ingress.yaml
+kubectl create -f dashboard-ingress.yaml -n kube-system
 
 # Print gitlab root password
 echo "\nGitlab info:"
