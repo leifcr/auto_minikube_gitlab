@@ -1,5 +1,6 @@
 #!/bin/sh
 echo "Creating CA certificates"
+set -e
 
 mkdir -p ./certs
 cd ./certs

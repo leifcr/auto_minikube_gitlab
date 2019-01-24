@@ -1,5 +1,6 @@
 #!/bin/sh
 echo "Creating CA and local certificates"
+set -e
 
 if [ "$#" -ne 1 ]
 then
