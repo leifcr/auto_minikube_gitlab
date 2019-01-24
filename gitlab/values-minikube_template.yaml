@@ -11,7 +11,7 @@ global:
     configureCertmanager: false
     class: "nginx"
     tls:
-      secretName: wildcard-testing-selfsigned-tls
+      secretName: wildcard-testing-selfsigned-tls-__IP__
   hosts:
     domain: __IP__.nip.io
     externalIP: __IP__

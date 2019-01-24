@@ -1,1 +1,4 @@
 certs/*
+dashboard-ingress.yaml
+gitlab/values-minikube.yaml
+
