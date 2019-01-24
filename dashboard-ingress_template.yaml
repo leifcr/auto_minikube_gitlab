@@ -4,7 +4,7 @@ metadata:
  name: kubernetes-dashboard-ingress
 spec:
  rules:
-  - host: dashboard.192.168.99.100.nip.io
+  - host: dashboard.__IP__.nip.io
     http:
      paths:
       - path: /
