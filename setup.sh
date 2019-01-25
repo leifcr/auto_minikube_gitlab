@@ -70,7 +70,7 @@ cp dashboard-ingress_template.yaml dashboard-ingress.yaml
 sed -i "s/__IP__/$IP/g" dashboard-ingress.yaml
 
 # Don't require auth for settings
-kubectl apply -f dashboard-with-args.yaml -n kube-system
+kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
 
 # List 30 items per page on dashboard as default
 kubectl apply -f dashboard-settings.yaml -n kube-system
@@ -78,14 +78,19 @@ kubectl apply -f dashboard-settings.yaml -n kube-system
 # Create dashboard ingress
 kubectl create -f dashboard-ingress.yaml -n kube-system
 
+
 # Print gitlab root password
 echo "\nGitlab info:"
 echo "Root password: $(kubectl get secret gitlab-gitlab-initial-root-password -ojsonpath={.data.password} | base64 --decode ; echo)"
-echo "URL: https://gitlab.$IP.nip.io\n"
+echo "URLs:"
+echo "    Gitlab HTTPS: https://gitlab.$IP.nip.io\n"
+echo "           HTTP:  http://gitlab.$IP.nip.io\n"
+echo "Dashboard  HTTPS: https://dashboard.$IP.nip.io"
+echo "           HTTP:  https://dashboard.$IP.nip.io"
+echo "Minio      HTTPS: https://minio.$IP.nip.io"
+echo "           HTTP:  https://minio.$IP.nip.io"
 
-echo "Minikube:"
-echo "Dashboard: https://dashboard.$IP.nip.io"
-echo "IP: $(minikube ip)"
+echo "Minikube IP: $(minikube ip)"
 
 # echo "URL: https://minio.$IP.nip.io"
 
