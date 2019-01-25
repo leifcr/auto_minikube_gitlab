@@ -86,9 +86,9 @@ echo "URLs:"
 echo "    Gitlab HTTPS: https://gitlab.$IP.nip.io\n"
 echo "           HTTP:  http://gitlab.$IP.nip.io\n"
 echo "Dashboard  HTTPS: https://dashboard.$IP.nip.io"
-echo "           HTTP:  https://dashboard.$IP.nip.io"
+echo "           HTTP:  http://dashboard.$IP.nip.io"
 echo "Minio      HTTPS: https://minio.$IP.nip.io"
-echo "           HTTP:  https://minio.$IP.nip.io"
+echo "           HTTP:  http://minio.$IP.nip.io"
 
 echo "Minikube IP: $(minikube ip)"
 
