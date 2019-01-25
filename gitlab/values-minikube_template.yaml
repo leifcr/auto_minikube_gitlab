@@ -17,6 +17,7 @@ global:
   hosts:
     domain: __IP__.nip.io
     externalIP: __IP__
+    https: false
 # Don't use certmanager, we'll self-sign
 certmanager:
   install: false
