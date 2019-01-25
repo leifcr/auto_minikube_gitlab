@@ -1,8 +1,5 @@
 #!/bin/sh
 set -e
-# echo "Forcing IP as 192.168.99.100 by deleting HostInterfaceNetworking-vboxnet0*"
-# rm ~/.config/VirtualBox/HostInterfaceNetworking-vboxnet0*
-
 # Delete certs
 # rm -rf ./certs
 
