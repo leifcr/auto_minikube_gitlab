@@ -29,7 +29,24 @@ prometheus:
   install: false
 # GitLab Runner isn't a big fan of self-signed certificates
 gitlab-runner:
-  install: false
+  install: true
+  gitlabUrl: http://gitlab.__IP__.nip.io
+  unregisterRunners: true
+  rbac:
+    create: true
+  metrics:
+    enabled: false
+  runners:
+    privileged: true
+    cache: {}
+    builds: {}
+    services: {}
+    helpers: {}
+    resources: {}
+    affinity: {}
+    nodeSelector: {}
+    tolerations: []
+
 # Reduce replica counts, reducing CPU & memory requirements  
 gitlab:
   unicorn:

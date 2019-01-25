@@ -85,6 +85,7 @@ kubectl apply -f dashboard-settings.yaml -n kube-system
 # Create dashboard ingress
 kubectl create -f dashboard-ingress.yaml -n kube-system
 
+# Setup kubernetes service account for gitlab
 ./gitlab/setup_kube_account.sh
 
 # Print gitlab root password
