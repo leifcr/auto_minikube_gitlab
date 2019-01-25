@@ -32,6 +32,7 @@ DNS.6 = app2.$IP.nip.io
 DNS.7 = service1.$IP.nip.io
 DNS.8 = service2.$IP.nip.io
 DNS.9 = dashboard.$IP.nip.io
+DNS.10 = mailhog.$IP.nip.io
 IP.1 = $IP
 IP.2 = 10.96.0.1
 IP.3 = 10.0.0.1

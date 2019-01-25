@@ -1,0 +1,13 @@
+service:
+  externalIPs: [ "__IP__" ]
+  port:
+    http: 8025
+    smtp: 1025
+  nodePort:
+    smtp: 1025
+
+ingress:
+  enabled: true
+  path: /
+  hosts:
+    - mailhog.__IP__.nip.io

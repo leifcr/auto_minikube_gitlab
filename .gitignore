@@ -2,3 +2,5 @@ certs/*
 dashboard-ingress.yaml
 gitlab/values-minikube.yaml
 gitlab-runner-secret.yaml
+mailhog_values.yaml
+

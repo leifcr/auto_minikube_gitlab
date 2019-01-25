@@ -37,12 +37,18 @@ minikube stop
 # Start minikube again with correct api-server-name to create correct certs for api
 minikube start --apiserver-name=kubeapi.$IP.nip.io
 
+
 # Create other certificates
 ./certs.sh $IP
 
 # Setup helm
 helm init
 kubectl rollout status deployment/tiller-deploy -n kube-system
+
+# Install mailhog for e-mails from gitlab
+cp ./mailhog_values_template.yaml ./mailhog_values.yaml
+sed -i "s/__IP__/$IP/g" mailhog_values.yaml
+helm upgrade --install --values ./mailhog_values.yaml mailhog stable/mailhog
 
 # Check if secret exists
 set +e
@@ -64,6 +70,8 @@ helm repo update
 # Replace __IP__ in gitlab/values-minikube_template.yaml
 cp ./gitlab/values-minikube_template.yaml ./gitlab/values-minikube.yaml
 sed -i "s/__IP__/$IP/g" ./gitlab/values-minikube.yaml
+
+kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=kubedevelop
 
 # Install gitlab using helm
 # Use CE version
@@ -98,11 +106,12 @@ echo "Dashboard  HTTPS: https://dashboard.$IP.nip.io"
 echo "           HTTP:  http://dashboard.$IP.nip.io"
 echo "Minio      HTTPS: https://minio.$IP.nip.io"
 echo "           HTTP:  http://minio.$IP.nip.io"
+echo "Mailhog    HTTP:  http://mailhog.$IP.nip.io"
 echo "Minikube IP: $(minikube ip)"
 
 echo "\nInformation for gitlab setup"
 echo "API ip: Server: $(kubectl cluster-info | grep 'Kubernetes master' | awk '/http/ {print $NF}')"
-echo "IP url: https://kubeapi.$ip.nip.io:8443"
+echo "IP url: https://kubeapi.$IP.nip.io:8443"
 echo "\nToken:"
 echo "$(kubectl get secret $(kubectl get secrets | grep gitlab-token | cut -f1 -d ' ') -o jsonpath="{['data']['token']}" | base64 --decode)"
 echo "\nCA:"
