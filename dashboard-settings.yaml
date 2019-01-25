@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  _global: '{"clusterName":"Gitlab Development Cluster","itemsPerPage":35,"autoRefreshTimeInterval":5}'
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: kubernetes-dashboard-settings
+  selfLink: /api/v1/namespaces/kube-system/configmaps/kubernetes-dashboard-settings

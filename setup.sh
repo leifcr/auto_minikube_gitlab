@@ -69,6 +69,12 @@ kubectl rollout status deployment/tiller-deploy -n kube-system
 cp dashboard-ingress_template.yaml dashboard-ingress.yaml
 sed -i "s/__IP__/$IP/g" dashboard-ingress.yaml
 
+# Don't require auth for settings
+kubectl apply -f dashboard-with-args.yaml -n kube-system
+
+# List 30 items per page on dashboard as default
+kubectl apply -f dashboard-settings.yaml -n kube-system
+
 # Create dashboard ingress
 kubectl create -f dashboard-ingress.yaml -n kube-system
 
