@@ -1,9 +1,6 @@
 # values-minikube.yaml
-# This example intended as baseline to use Minikube for the deployment of GitLab
-# - Minimized CPU/Memory load, can fit into 2 CPU, 4 GB of RAM (barely)
-# - Services that are not compatible with how Minikube runs are disabled
-# - Some services entirely removed, or scaled down to 1 replica.
-# - Configured to use __IP__, and nip.io for the domain
+# NOTE: This is made to create a working minikube for development.
+# DO NOT use this in production.
 
 # Minimal settings
 global:
@@ -18,6 +15,8 @@ global:
     domain: __IP__.nip.io
     externalIP: __IP__
     https: false
+  # Keep it simple for development
+  initialRootPassword: kubedevelop
 # Don't use certmanager, we'll self-sign
 certmanager:
   install: false
