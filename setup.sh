@@ -21,6 +21,7 @@ if [ $? -ne '0' ]; then
   set -e
   minikube start --memory 8192 --cpus 4 --iso-url https://github.com/leifcr/minikube/releases/download/v0.33.1-iso-only/minikube-0.33.1-mac_fix.iso
 fi
+
 set -e
 # Ensure minikube is running before going forward
 echo "Minikube status:"
@@ -30,6 +31,12 @@ minikube addons enable ingress
 minikube addons enable dashboard
 minikube addons enable heapster
 IP=$(minikube ip)
+
+# Stop minikube
+minikube stop
+# Start minikube again with correct api-server-name to create correct certs for api
+minikube start --apiserver-name=kubeapi.$IP.nip.io
+
 # Create other certificates
 ./certs.sh $IP
 
@@ -78,6 +85,7 @@ kubectl apply -f dashboard-settings.yaml -n kube-system
 # Create dashboard ingress
 kubectl create -f dashboard-ingress.yaml -n kube-system
 
+./gitlab/setup_kube_account.sh
 
 # Print gitlab root password
 echo "\nGitlab info:"
@@ -89,8 +97,15 @@ echo "Dashboard  HTTPS: https://dashboard.$IP.nip.io"
 echo "           HTTP:  http://dashboard.$IP.nip.io"
 echo "Minio      HTTPS: https://minio.$IP.nip.io"
 echo "           HTTP:  http://minio.$IP.nip.io"
-
 echo "Minikube IP: $(minikube ip)"
+
+echo "\nInformation for gitlab setup"
+echo "API ip: Server: $(kubectl cluster-info | grep 'Kubernetes master' | awk '/http/ {print $NF}')"
+echo "IP url: https://kubeapi.$ip.nip.io:8443"
+echo "\nToken:"
+echo "$(kubectl get secret $(kubectl get secrets | grep gitlab-token | cut -f1 -d ' ') -o jsonpath="{['data']['token']}" | base64 --decode)"
+echo "\nCA:"
+echo "$(kubectl get secret $(kubectl get secrets | grep gitlab-token | cut -f1 -d ' ') -o jsonpath="{['data']['ca\.crt']}" | base64 --decode)"
 
 # echo "URL: https://minio.$IP.nip.io"
 
