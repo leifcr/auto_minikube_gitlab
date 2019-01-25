@@ -12,6 +12,8 @@ global:
     class: "nginx"
     tls:
       secretName: wildcard-testing-selfsigned-tls-__IP__
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
   hosts:
     domain: __IP__.nip.io
     externalIP: __IP__
@@ -32,8 +34,9 @@ gitlab:
   unicorn:
     minReplicas: 1
     maxReplicas: 1
-    # ingress:
-    #   tls:
+    ingress:
+      tls:
+        enabled: true
     #     secretName: gitlab-unicorn-tls
   sidekiq:
     minReplicas: 1
@@ -44,10 +47,13 @@ gitlab:
 registry:
   minReplicas: 1
   maxReplicas: 1
-  # ingress:
-  #   tls:
-  #     secretName: gitlab-registry-tls
-# minio:
-#   ingress:
-#     tls:
+  ingress:
+    tls:
+      enabled: true
+#     secretName: gitlab-registry-tls
+minio:
+  ingress:
+    tls:
+      enabled: true
+
 #       secretName: gitlab-minio-tls

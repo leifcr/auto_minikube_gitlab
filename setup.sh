@@ -48,6 +48,7 @@ if [ $? -ne '0' ]; then
   set -e
   # Store secret in kubernetes
   kubectl create secret tls wildcard-testing-selfsigned-tls-$IP --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key
+  kubectl create secret tls wildcard-testing-selfsigned-tls-$IP --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key -n kube-system
 else
   set -e
 fi
