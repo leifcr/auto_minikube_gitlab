@@ -15,8 +15,14 @@ global:
     domain: __IP__.nip.io
     externalIP: __IP__
     https: false
-  # Keep it simple for development
-  initialRootPassword: kubedevelop
+  # Keep it simple for development. Set in secret (not here)
+  # initialRootPassword: kubedevelop
+  smtp:
+    enabled: true
+    address: mailhog.default.svc.cluster.local
+    port: 1025
+    authentication: ""
+
 # Don't use certmanager, we'll self-sign
 certmanager:
   install: false
