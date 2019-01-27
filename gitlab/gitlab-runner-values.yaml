@@ -1,0 +1,18 @@
+gitlabUrl: http://gitlab.192.168.99.100.nip.io
+runnerRegistrationToken: x
+unregisterRunners: true
+certsSecretName: ca-testing-selfsigned-tls
+rbac:
+  create: true
+metrics:
+  enabled: false
+runners:
+  privileged: true
+  cache: {}
+  builds: {}
+  services: {}
+  helpers: {}
+  resources: {}
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
