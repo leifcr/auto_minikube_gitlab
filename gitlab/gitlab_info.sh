@@ -1,0 +1,17 @@
+#!/bin/sh
+IP=$(minikube ip)
+echo "\nGitlab info:"
+echo "Root password: $(kubectl get secret gitlab-gitlab-initial-root-password -ojsonpath={.data.password} | base64 --decode ; echo)"
+echo "URLs:"
+echo "    Gitlab HTTPS: https://gitlab.$IP.nip.io\n"
+echo "           HTTP:  http://gitlab.$IP.nip.io\n"
+echo "Dashboard  HTTPS: https://dashboard.$IP.nip.io"
+echo "           HTTP:  http://dashboard.$IP.nip.io"
+echo "Minio      HTTPS: https://minio.$IP.nip.io"
+echo "           HTTP:  http://minio.$IP.nip.io"
+echo "Mailhog    HTTP:  http://mailhog.$IP.nip.io"
+echo "Minikube IP: $(minikube ip)"
+echo "Postgres port: 5432"
+echo "         database gitlabhq_production"
+echo "         username: gitlab"
+echo "         password: $(kubectl get secret gitlab-postgresql-password -ojsonpath={.data.postgres-password} | base64 --decode ; echo)"

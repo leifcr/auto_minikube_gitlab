@@ -104,28 +104,21 @@ sed "s/__IP__/$IP/g" gitlab/gitlab-postgres-external_template.yaml | kubectl cre
 # Setup kubernetes service account for gitlab
 ./gitlab/setup_kube_account.sh
 
-# Print gitlab root password
-echo "\nGitlab info:"
-echo "Root password: $(kubectl get secret gitlab-gitlab-initial-root-password -ojsonpath={.data.password} | base64 --decode ; echo)"
-echo "URLs:"
-echo "    Gitlab HTTPS: https://gitlab.$IP.nip.io\n"
-echo "           HTTP:  http://gitlab.$IP.nip.io\n"
-echo "Dashboard  HTTPS: https://dashboard.$IP.nip.io"
-echo "           HTTP:  http://dashboard.$IP.nip.io"
-echo "Minio      HTTPS: https://minio.$IP.nip.io"
-echo "           HTTP:  http://minio.$IP.nip.io"
-echo "Mailhog    HTTP:  http://mailhog.$IP.nip.io"
-echo "Minikube IP: $(minikube ip)"
-echo "Postgres port: 5432"
-echo "         database gitlabhq_production"
-echo "         username: gitlab"
-echo "         password: $(kubectl get secret gitlab-postgresql-password -ojsonpath={.data.postgres-password} | base64 --decode ; echo)"
+# Print gitlab info
+./gitlab/gitlab_info.sh
+
+# Print gitlab kubernetes integration info
 ./gitlab/setup_info.sh
+
+echo "\nDomains for test apps:"
+echo "   app1.$IP.nip.io"
+echo "   app2.$IP.nip.io"
+echo "   service1.$IP.nip.io"
+echo "   service2.$IP.nip.io"
 
 # echo "URL: https://minio.$IP.nip.io"
 
 # All good?
 
 echo "\nRemember to install the CA certs where needed (likely on your devel computer)"
-
 echo "Also remember to set allow requests to local network in gitlab here: /admin/application_settings/network"
