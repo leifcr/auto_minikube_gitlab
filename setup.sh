@@ -101,6 +101,9 @@ sed "s/__IP__/$IP/g" dashboard-ingress_template.yaml | kubectl apply -n kube-sys
 # Create postgres external access
 sed "s/__IP__/$IP/g" gitlab/gitlab-postgres-external_template.yaml | kubectl create -f -
 
+# Open shell on port 2222
+sed "s/__IP__/$IP/g" gitlab/gitlab-shell-service-external-ip_template.yaml | kubectl create -f -
+
 # Setup kubernetes service account for gitlab
 ./gitlab/setup_kube_account.sh
 
