@@ -63,6 +63,17 @@ else
   set -e
 fi
 
+set +e
+kubectl get secret ca-testing-selfsigned-tls
+
+if [ $? -ne '0' ]; then
+  set -e
+  # Store secret in kubernetes
+  kubectl create secret generic ca-testing-selfsigned-tls --from-file=minikube-self-ca.crt=./certs/minikube-self-ca.crt
+else
+  set -e
+fi
+
 # Add gitlab repo
 helm repo add gitlab https://charts.gitlab.io/
 helm repo update
@@ -108,17 +119,16 @@ echo "Minio      HTTPS: https://minio.$IP.nip.io"
 echo "           HTTP:  http://minio.$IP.nip.io"
 echo "Mailhog    HTTP:  http://mailhog.$IP.nip.io"
 echo "Minikube IP: $(minikube ip)"
-
-echo "\nInformation for gitlab setup"
-echo "API ip: Server: $(kubectl cluster-info | grep 'Kubernetes master' | awk '/http/ {print $NF}')"
-echo "IP url: https://kubeapi.$IP.nip.io:8443"
-echo "\nToken:"
-echo "$(kubectl get secret $(kubectl get secrets | grep gitlab-token | cut -f1 -d ' ') -o jsonpath="{['data']['token']}" | base64 --decode)"
-echo "\nCA:"
-echo "$(kubectl get secret $(kubectl get secrets | grep gitlab-token | cut -f1 -d ' ') -o jsonpath="{['data']['ca\.crt']}" | base64 --decode)"
+echo "Postgres port: 5432"
+echo "         database gitlabhq_production"
+echo "         username: gitlab"
+echo "         password: $(kubectl get secret gitlab-postgresql-password -ojsonpath={.data.postgres-password} | base64 --decode ; echo)"
+./gitlab/setup_info.sh
 
 # echo "URL: https://minio.$IP.nip.io"
 
 # All good?
 
 echo "\nRemember to install the CA certs where needed (likely on your devel computer)"
+
+echo "Also remember to set allow requests to local network in gitlab here: /admin/application_settings/network"
