@@ -96,7 +96,7 @@ kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='
 kubectl apply -f dashboard-settings.yaml -n kube-system
 # Replace __IP__ in dashboard-ingress_template.yaml
 # Create dashboard ingress
-sed "s/__IP__/$IP/g" dashboard-ingress_template.yaml | kubectl apply -f -
+sed "s/__IP__/$IP/g" dashboard-ingress_template.yaml | kubectl apply -n kube-system -f -
 
 # Create postgres external access
 sed "s/__IP__/$IP/g" gitlab/gitlab-postgres-external_template.yaml | kubectl create -f -
