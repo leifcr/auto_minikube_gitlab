@@ -22,6 +22,8 @@ global:
     address: mailhog.default.svc.cluster.local
     port: 1025
     authentication: ""
+  shell:
+    port: 2222
 
 # Don't use certmanager, we'll self-sign
 certmanager:
@@ -53,7 +55,7 @@ gitlab-runner:
     nodeSelector: {}
     tolerations: []
 
-# Reduce replica counts, reducing CPU & memory requirements  
+# Reduce replica counts, reducing CPU & memory requirements
 gitlab:
   unicorn:
     minReplicas: 1

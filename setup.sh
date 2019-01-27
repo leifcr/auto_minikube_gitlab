@@ -46,8 +46,7 @@ helm init
 kubectl rollout status deployment/tiller-deploy -n kube-system
 
 # Install mailhog for e-mails from gitlab
-cp ./mailhog_values_template.yaml ./mailhog_values.yaml
-sed -i "s/__IP__/$IP/g" mailhog_values.yaml
+sed "s/__IP__/$IP/g" mailhog_values_template.yaml > mailhog_values.yaml
 helm upgrade --install --values ./mailhog_values.yaml mailhog stable/mailhog
 
 # Check if secret exists
@@ -79,8 +78,7 @@ helm repo add gitlab https://charts.gitlab.io/
 helm repo update
 
 # Replace __IP__ in gitlab/values-minikube_template.yaml
-cp ./gitlab/values-minikube_template.yaml ./gitlab/values-minikube.yaml
-sed -i "s/__IP__/$IP/g" ./gitlab/values-minikube.yaml
+sed "s/__IP__/$IP/g" ./gitlab/values-minikube_template.yaml > ./gitlab/values-minikube.yaml
 
 kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=kubedevelop
 
@@ -91,18 +89,17 @@ helm upgrade --install gitlab gitlab/gitlab --values ./gitlab/values-minikube.ya
 # Wait for gitlab rollout to finish
 kubectl rollout status deployment/tiller-deploy -n kube-system
 
-# Replace __IP__ in dashboard-ingress_template.yaml
-cp dashboard-ingress_template.yaml dashboard-ingress.yaml
-sed -i "s/__IP__/$IP/g" dashboard-ingress.yaml
-
-# Don't require auth for settings
+# Don't require auth for settings on dashboard
 kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
 
 # List 30 items per page on dashboard as default
 kubectl apply -f dashboard-settings.yaml -n kube-system
-
+# Replace __IP__ in dashboard-ingress_template.yaml
 # Create dashboard ingress
-kubectl create -f dashboard-ingress.yaml -n kube-system
+sed "s/__IP__/$IP/g" dashboard-ingress_template.yaml | kubectl apply -f -
+
+# Create postgres external access
+sed "s/__IP__/$IP/g" gitlab/gitlab-postgres-external_template.yaml | kubectl create -f -
 
 # Setup kubernetes service account for gitlab
 ./gitlab/setup_kube_account.sh

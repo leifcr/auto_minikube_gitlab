@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: gitlab-postgresql-external
+spec:
+  selector:
+    app: postgresql
+  ports:
+  - name: postgres
+    protocol: TCP
+    port: 5432
+    targetPort: "postgresql"
+  externalIPs:
+    - 192.168.99.100
+  type: NodePort
