@@ -1,10 +1,10 @@
 #!/bin/sh
 # Delete any keys that might be saved when using git or ssh
 IP=$(minikube ip)
-
 ssh-keygen -R $IP
 ssh-keygen -R gitlab.$IP.nip.io
 ssh-keygen -R $IP.nip.io
+ssh-keygen -R "[gitlab.$IP.nip.io]:2222"
 # Delete cluster
 minikube delete
 # Cleanup virtual ips
