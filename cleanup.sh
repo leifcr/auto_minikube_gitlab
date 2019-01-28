@@ -5,6 +5,7 @@ ssh-keygen -R $IP
 ssh-keygen -R gitlab.$IP.nip.io
 ssh-keygen -R $IP.nip.io
 ssh-keygen -R "[gitlab.$IP.nip.io]:2222"
+ssh-keygen -R "[$IP]:2222"
 # Delete cluster
 minikube delete
 # Cleanup virtual ips
