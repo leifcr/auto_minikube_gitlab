@@ -96,7 +96,14 @@ kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal
 helm upgrade --install gitlab gitlab/gitlab --values ./gitlab/values-minikube.yaml --set gitlab.migrations.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-rails-ce --set gitlab.sidekiq.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-sidekiq-ce --set gitlab.unicorn.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-unicorn-ce --set gitlab.unicorn.workhorse.image=registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce --set gitlab.task-runner.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-task-runner-ce
 
 # Wait for gitlab rollout to finish
-kubectl rollout status deployment/tiller-deploy -n kube-system
+kubectl rollout status deployment/gitlab-postgresql
+kubectl rollout status deployment/gitlab-minio
+kubectl rollout status deployment/gitlab-registry
+kubectl rollout status deployment/gitlab-redis
+kubectl rollout status deployment/gitlab-gitlab-shell
+kubectl rollout status deployment/gitlab-sidekiq-all-in-1
+kubectl rollout status deployment/gitlab-unicorn
+kubectl rollout status deployment/gitlab-gitlab-runner
 
 # Don't require auth for settings on dashboard
 kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
