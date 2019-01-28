@@ -12,6 +12,14 @@ cp -f ./certs/minikube-self-ca.crt ~/.minikube/certs/ca.pem
 cp -f ./certs/minikube-self-ca.key ~/.minikube/certs/ca-key.pem
 cp -f ./certs/minikube-self-ca.crt ~/.minikube/ca.crt
 cp -f ./certs/minikube-self-ca.key ~/.minikube/ca.key
+mkdir -p ~/.minikube/files/etc/ssl/certs/
+mkdir -p ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io
+# cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
+cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
+# cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/$IP.nip.io.crt
+# chmod 640 ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
+# chmod 640 ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io.crt
+# chmod 640 ~/.minikube/files/etc/docker/certs.d/$IP.nip.io.crt
 
 # Start minikube
 # Check if minikube is running already
@@ -34,12 +42,13 @@ IP=$(minikube ip)
 
 # Stop minikube
 minikube stop
-# Start minikube again with correct api-server-name to create correct certs for api
-minikube start --apiserver-name=kubeapi.$IP.nip.io
-
 
 # Create other certificates
 ./certs.sh $IP
+# cp -f ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem
+
+# Start minikube again with correct api-server-name to create correct certs for api
+minikube start --apiserver-name=kubeapi.$IP.nip.io
 
 # Setup helm
 helm init
