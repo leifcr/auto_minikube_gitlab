@@ -87,7 +87,7 @@ helm repo update
 # Replace __IP__ in gitlab/values-minikube_template.yaml
 sed "s/__IP__/$IP/g" ./gitlab/values-minikube_template.yaml > ./gitlab/values-minikube.yaml
 
-kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=kubedevelop
+kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=$(echo kubedevelop | head -c 11)
 
 # Install gitlab using helm
 # Use CE version
