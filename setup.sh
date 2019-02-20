@@ -20,7 +20,7 @@ set +e
 minikube status > /dev/null
 if [ $? -ne '0' ]; then
   set -e
-  minikube start --memory 8192 --cpus 4 --disk-size 35g --iso-url https://github.com/leifcr/minikube/releases/download/v0.33.1-iso-only/minikube-0.33.1-mac_fix.iso
+  minikube start --memory 8192 --cpus 4 --disk-size 35g
 fi
 
 set -e
