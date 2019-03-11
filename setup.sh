@@ -20,7 +20,7 @@ set +e
 minikube status > /dev/null
 if [ $? -ne '0' ]; then
   set -e
-  minikube start --memory 8192 --cpus 4 --disk-size 35g
+  minikube start --memory 10240 --cpus 4 --disk-size 35g
 fi
 
 set -e
