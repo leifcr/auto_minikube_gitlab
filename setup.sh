@@ -74,10 +74,10 @@ fi
 
 # Create new ingress
 sed "s/__IP__/$IP/g" ./ingress/ingress-dp_template.yaml > ./ingress/ingress-dp.yaml
-kubectl apply -f ./ingress/ingress-rbac.yaml
-kubectl apply -f ./ingress/ingress-configmap.yaml
-kubectl apply -f ./ingress/ingress-svc.yaml
-kubectl apply -f ./ingress/ingress-dp.yaml
+kubectl apply --namespace kube-system -f ./ingress/ingress-rbac.yaml
+kubectl apply --namespace kube-system -f ./ingress/ingress-configmap.yaml
+kubectl apply --namespace kube-system -f ./ingress/ingress-svc.yaml
+kubectl apply --namespace kube-system -f ./ingress/ingress-dp.yaml
 sleep 2
 
 kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
