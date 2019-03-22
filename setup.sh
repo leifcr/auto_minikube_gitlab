@@ -28,7 +28,7 @@ set -e
 echo "Minikube status:"
 minikube status
 echo "\n";
-minikube addons enable ingress
+minikube addons disable ingress
 minikube addons enable dashboard
 minikube addons enable heapster
 IP=$(minikube ip)
@@ -47,14 +47,6 @@ cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry
 
 # Start minikube again with correct api-server-name to create correct certs for api
 minikube start --apiserver-name=kubeapi.$IP.nip.io
-
-# Setup helm
-helm init
-kubectl rollout status deployment/tiller-deploy -n kube-system
-
-# Install mailhog for e-mails from gitlab
-sed "s/__IP__/$IP/g" mailhog_values_template.yaml > mailhog_values.yaml
-helm upgrade --install --values ./mailhog_values.yaml mailhog stable/mailhog
 
 # Check if secret exists
 set +e
@@ -80,6 +72,24 @@ else
   set -e
 fi
 
+# Create new ingress
+sed "s/__IP__/$IP/g" ./ingress/ingress-dp_template.yaml > ./ingress/ingress-dp.yaml
+kubectl apply -f ./ingress/ingress-rbac.yaml
+kubectl apply -f ./ingress/ingress-configmap.yaml
+kubectl apply -f ./ingress/ingress-svc.yaml
+kubectl apply -f ./ingress/ingress-dp.yaml
+sleep 2
+
+kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
+
+# Setup helm
+helm init
+kubectl rollout status deployment/tiller-deploy -n kube-system
+
+# Install mailhog for e-mails from gitlab
+sed "s/__IP__/$IP/g" mailhog_values_template.yaml > mailhog_values.yaml
+helm upgrade --install --values ./mailhog_values.yaml mailhog stable/mailhog
+
 # Add gitlab repo
 helm repo add gitlab https://charts.gitlab.io/
 helm repo update
@@ -103,6 +113,8 @@ kubectl rollout status deployment/gitlab-sidekiq-all-in-1
 kubectl rollout status deployment/gitlab-unicorn
 kubectl rollout status deployment/gitlab-gitlab-runner
 
+kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
+
 # Don't require auth for settings on dashboard
 kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
 
@@ -120,6 +132,13 @@ sed "s/__IP__/$IP/g" gitlab/gitlab-shell-service-external-ip_template.yaml | kub
 
 # Setup kubernetes service account for gitlab
 ./gitlab/setup_kube_account.sh
+
+# Patch ingress
+# kubectl patch deployment nginx-ingress-controller --type 'json' --namespace kube-system -p '[{"op": "replace", "path": "/spec/strategy/type", "value": "Recreate"}, {"op": "replace", "path": "/spec/strategy/rollingUpdate", "value": null }]'
+# Set default certificate
+# kubectl patch deployment nginx-ingress-controller --type 'json' --namespace kube-system -p "[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/args/-\", \"value\": \"--default-ssl-certificate=kube-system/wildcard-testing-selfsigned-tls-$IP\"}]"
+
+# Setup ingress properly
 
 # Print gitlab info
 ./gitlab/gitlab_info.sh
