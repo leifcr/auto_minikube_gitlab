@@ -12,6 +12,8 @@ cp -f ./certs/minikube-self-ca.crt ~/.minikube/certs/ca.pem
 cp -f ./certs/minikube-self-ca.key ~/.minikube/certs/ca-key.pem
 cp -f ./certs/minikube-self-ca.crt ~/.minikube/ca.crt
 cp -f ./certs/minikube-self-ca.key ~/.minikube/ca.key
+mkdir -p ~/.minikube/addons/ingress-ssl
+cp -f ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/
 mkdir -p ~/.minikube/files/etc/ssl/certs/
 
 # Start minikube
@@ -28,6 +30,7 @@ set -e
 echo "Minikube status:"
 minikube status
 echo "\n";
+# Using own ingress (ingress-ssl)
 minikube addons disable ingress
 minikube addons enable dashboard
 minikube addons enable heapster
@@ -57,6 +60,8 @@ if [ $? -ne '0' ]; then
   # Store secret in kubernetes
   kubectl create secret tls wildcard-testing-selfsigned-tls-$IP --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key
   kubectl create secret tls wildcard-testing-selfsigned-tls-$IP --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key -n kube-system
+  # For nginx ssl ingress
+  kubectl create secret tls default-ssl-certificate --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key -n kube-system
 else
   set -e
 fi

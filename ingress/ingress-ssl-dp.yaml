@@ -128,7 +128,8 @@ spec:
         - --annotations-prefix=nginx.ingress.kubernetes.io
         # use minikube IP address in ingress status field
         - --report-node-internal-ip-address
-        - --default-ssl-certificate=kube-system/wildcard-testing-selfsigned-tls-192.168.1.100
+        - --default-ssl-certificate=$(POD_NAMESPACE)/default-ssl-certificate
+        # - --default-ssl-certificate=$(POD_NAMESPACE)/wildcard-testing-selfsigned-tls-192.168.1.100
         securityContext:
           capabilities:
               drop:
