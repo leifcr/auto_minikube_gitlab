@@ -12,9 +12,12 @@ cp -f ./certs/minikube-self-ca.crt ~/.minikube/certs/ca.pem
 cp -f ./certs/minikube-self-ca.key ~/.minikube/certs/ca-key.pem
 cp -f ./certs/minikube-self-ca.crt ~/.minikube/ca.crt
 cp -f ./certs/minikube-self-ca.key ~/.minikube/ca.key
-mkdir -p ~/.minikube/addons/ingress-ssl
-cp -f ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/
 mkdir -p ~/.minikube/files/etc/ssl/certs/
+
+# Copy certs for docker engine
+mkdir -p ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io
+# cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
+cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
 
 # Start minikube
 # Check if minikube is running already
@@ -31,7 +34,7 @@ echo "Minikube status:"
 minikube status
 echo "\n";
 # Using own ingress (ingress-ssl)
-minikube addons disable ingress
+# minikube addons disable ingress
 minikube addons enable dashboard
 minikube addons enable heapster
 IP=$(minikube ip)
@@ -43,10 +46,10 @@ minikube stop
 ./certs.sh $IP
 # cp -f ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem
 
-# Copy certs for docker engine
-mkdir -p ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io
-# cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
-cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
+# Copy ingress
+mkdir -p ~/.minikube/addons/ingress-ssl
+sed "s/__IP__/$IP/g" ./ingress/ingress-ssl-dp_template.yaml > ./ingress/ingress-ssl-dp.yaml
+cp -f ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/
 
 # Start minikube again with correct api-server-name to create correct certs for api
 minikube start --apiserver-name=kubeapi.$IP.nip.io
@@ -78,12 +81,11 @@ else
 fi
 
 # Create new ingress
-sed "s/__IP__/$IP/g" ./ingress/ingress-dp_template.yaml > ./ingress/ingress-dp.yaml
-kubectl apply --namespace kube-system -f ./ingress/ingress-rbac.yaml
-kubectl apply --namespace kube-system -f ./ingress/ingress-configmap.yaml
-kubectl apply --namespace kube-system -f ./ingress/ingress-svc.yaml
-kubectl apply --namespace kube-system -f ./ingress/ingress-dp.yaml
-sleep 2
+# kubectl apply --namespace kube-system -f ./ingress/ingress-rbac.yaml
+# kubectl apply --namespace kube-system -f ./ingress/ingress-configmap.yaml
+# kubectl apply --namespace kube-system -f ./ingress/ingress-svc.yaml
+# kubectl apply --namespace kube-system -f ./ingress/ingress-dp.yaml
+# sleep 2
 
 kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
 
