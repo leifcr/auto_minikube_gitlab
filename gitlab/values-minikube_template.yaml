@@ -6,7 +6,6 @@
 global:
   ingress:
     configureCertmanager: false
-    class: "nginx"
     tls:
       secretName: wildcard-testing-selfsigned-tls-__IP__
     annotations:

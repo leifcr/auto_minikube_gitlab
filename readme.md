@@ -1,12 +1,12 @@
 # minikube with gitlab
 
-This creates a minikube kubernetes cluster with gitlab setup.
+This creates a minikube kubernetes cluster with gitlab setup, for development and testing purposes
 
 Requirements:
-  * minikube (https://github.com/kubernetes/minikube)
-  * virtualbox (https://virtualbox.org) (Other minikube setups might work. not tested)
-  * kubectl (https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-  * helm (https://docs.helm.sh/using_helm/#installing-helm and https://github.com/helm/helm/releases)
+  * [minikube](https://github.com/kubernetes/minikube)
+  * [virtualbox](https://virtualbox.org) (Other minikube setups might work, but are not tested)
+  * [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+  * [helm](https://docs.helm.sh/using_helm/#installing-helm) and [helm releases](https://github.com/helm/helm/releases)
 
 After you have all the above, simply call ```setup.sh```
 
@@ -21,3 +21,10 @@ Default credentials for gitlab:
   * *password*: kubedevelop
 
 This is provided AS-IS.
+
+## Ingress
+
+Default ingress service is setup to use [Traefik](https://traefik.io/)
+
+To use Nginx as ingress instead, run setup with NGINXINGRESS=true
+``` NGINXINGRESS=true setup.sh ```

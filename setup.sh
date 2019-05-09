@@ -19,12 +19,20 @@ mkdir -p ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io
 # cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
 cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
 
+# Remove nginx ssl ingress addon if using traefik
+if [ -z "$NGINXINGRESS" ]
+then
+echo "Traefik Ingress used, will remove nginx ingress ssl addon, if previously installed"
+rm -rf ~/.minikube/addons/ingress-ssl
+fi
+
 # Start minikube
 # Check if minikube is running already
 set +e
-minikube status > /dev/null
+minikube status > /dev/null 2>&1
 if [ $? -ne '0' ]; then
   set -e
+  echo 'Starting up minikube (will create if not existing)'
   minikube start --memory 10240 --cpus 4 --disk-size 35g
 fi
 
@@ -37,22 +45,22 @@ echo "\n";
 # minikube addons disable ingress
 minikube addons enable dashboard
 minikube addons enable heapster
+# minikube addons disable ingress
 IP=$(minikube ip)
 
 # Stop minikube
-minikube stop
+# minikube stop
 
 # Create other certificates
 ./certs.sh $IP
 # cp -f ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem
 
-# Copy ingress
-mkdir -p ~/.minikube/addons/ingress-ssl
-sed "s/__IP__/$IP/g" ./ingress/ingress-ssl-dp_template.yaml > ./ingress/ingress-ssl-dp.yaml
-cp -f ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/
-
 # Start minikube again with correct api-server-name to create correct certs for api
-minikube start --apiserver-name=kubeapi.$IP.nip.io
+# minikube start --apiserver-name=kubeapi.$IP.nip.io
+
+# Setup helm
+helm init
+kubectl rollout status deployment/tiller-deploy -n kube-system
 
 # Check if secret exists
 set +e
@@ -80,18 +88,42 @@ else
   set -e
 fi
 
-# Create new ingress
-# kubectl apply --namespace kube-system -f ./ingress/ingress-rbac.yaml
-# kubectl apply --namespace kube-system -f ./ingress/ingress-configmap.yaml
-# kubectl apply --namespace kube-system -f ./ingress/ingress-svc.yaml
-# kubectl apply --namespace kube-system -f ./ingress/ingress-dp.yaml
-# sleep 2
+# If using traefik ingress, use helm chart with provided values.
+if [ -z "$NGINXINGRESS" ]
+then
+echo "Installing traefik Ingress"
+# Read certificate and key and write as base64
+BASE64SSLCERT=$(base64 ./certs/$IP-nip.fullchain.crt -w 0)
+BASE64SSLPRIVATEKEY=$(base64 ./certs/$IP-nip.key -w 0)
+sed "s/__IP__/$IP/g" traefik_values_template.yaml > traefik_values_t2.yaml
+sed "s/__BASE64SSLCERT__/$BASE64SSLCERT/g" traefik_values_t2.yaml > traefik_values_t3.yaml
+sed "s/__BASE64SSLPRIVATEKEY__/$BASE64SSLPRIVATEKEY/g" traefik_values_t3.yaml > traefik_values.yaml
+rm -f traefik_values_t2.yaml
+rm -f traefik_values_t3.yaml
 
+helm upgrade --install --values ./traefik_values.yaml traefik stable/traefik --namespace kube-system
+kubectl rollout status deployment/traefik --namespace kube-system
+else
+# If using nginx-ingress with ssl, do this:
+mkdir -p ~/.minikube/addons/ingress-ssl
+sed "s/__IP__/$IP/g" ./ingress/ingress-ssl-dp_template.yaml > ./ingress/ingress-ssl-dp.yaml
+cp -f ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/
 kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
+fi
 
-# Setup helm
-helm init
-kubectl rollout status deployment/tiller-deploy -n kube-system
+# Don't require auth for settings on dashboard
+kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
+
+# List 30 items per page on dashboard as default
+kubectl apply -f dashboard-settings.yaml -n kube-system
+# Replace __IP__ in dashboard-ingress_template.yaml
+# Create dashboard ingress
+if [ -z "$NGINXINGRESS" ]
+then
+sed "s/__IP__/$IP/g" dashboard-ingress_traefik_template.yaml | kubectl apply -n kube-system -f -
+else
+sed "s/__IP__/$IP/g" dashboard-ingress_template.yaml | kubectl apply -n kube-system -f -
+fi
 
 # Install mailhog for e-mails from gitlab
 sed "s/__IP__/$IP/g" mailhog_values_template.yaml > mailhog_values.yaml
@@ -120,17 +152,13 @@ kubectl rollout status deployment/gitlab-sidekiq-all-in-1
 kubectl rollout status deployment/gitlab-unicorn
 kubectl rollout status deployment/gitlab-gitlab-runner
 
-kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
-
-# Don't require auth for settings on dashboard
-kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
-
-# List 30 items per page on dashboard as default
-kubectl apply -f dashboard-settings.yaml -n kube-system
-# Replace __IP__ in dashboard-ingress_template.yaml
-# Create dashboard ingress
-sed "s/__IP__/$IP/g" dashboard-ingress_template.yaml | kubectl apply -n kube-system -f -
-
+# Remove ngnix class + provider requirements for gitlab, as we are running traefik
+if [ -z "$NGINXINGRESS" ]
+then
+kubectl patch ingress gitlab-registry --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
+kubectl patch ingress gitlab-minio --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
+kubectl patch ingress gitlab-unicorn --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
+fi
 # Create postgres external access
 sed "s/__IP__/$IP/g" gitlab/gitlab-postgres-external_template.yaml | kubectl create -f -
 
@@ -139,13 +167,6 @@ sed "s/__IP__/$IP/g" gitlab/gitlab-shell-service-external-ip_template.yaml | kub
 
 # Setup kubernetes service account for gitlab
 ./gitlab/setup_kube_account.sh
-
-# Patch ingress
-# kubectl patch deployment nginx-ingress-controller --type 'json' --namespace kube-system -p '[{"op": "replace", "path": "/spec/strategy/type", "value": "Recreate"}, {"op": "replace", "path": "/spec/strategy/rollingUpdate", "value": null }]'
-# Set default certificate
-# kubectl patch deployment nginx-ingress-controller --type 'json' --namespace kube-system -p "[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/args/-\", \"value\": \"--default-ssl-certificate=kube-system/wildcard-testing-selfsigned-tls-$IP\"}]"
-
-# Setup ingress properly
 
 # Print gitlab info
 ./gitlab/gitlab_info.sh
