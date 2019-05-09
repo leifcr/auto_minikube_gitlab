@@ -14,10 +14,6 @@ cp -f ./certs/minikube-self-ca.crt ~/.minikube/ca.crt
 cp -f ./certs/minikube-self-ca.key ~/.minikube/ca.key
 mkdir -p ~/.minikube/files/etc/ssl/certs/
 
-# Copy certs for docker engine
-mkdir -p ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io
-# cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
-cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
 
 # Remove nginx ssl ingress addon if using traefik
 if [ -z "$NGINXINGRESS" ]
@@ -49,14 +45,18 @@ minikube addons enable heapster
 IP=$(minikube ip)
 
 # Stop minikube
-# minikube stop
+minikube stop
+# Copy certs for docker engine
+mkdir -p ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io
+# cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
+cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
 
 # Create other certificates
 ./certs.sh $IP
 # cp -f ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem
 
 # Start minikube again with correct api-server-name to create correct certs for api
-# minikube start --apiserver-name=kubeapi.$IP.nip.io
+minikube start # --apiserver-name=kubeapi.$IP.nip.io
 
 # Setup helm
 helm init
