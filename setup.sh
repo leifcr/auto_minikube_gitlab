@@ -58,6 +58,10 @@ cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry
 # Start minikube again with correct api-server-name to create correct certs for api
 minikube start # --apiserver-name=kubeapi.$IP.nip.io
 
+# Wait until system is ready again
+kubectl rollout status deployment/kubernetes-dashboard -n kube-system
+kubectl rollout status deployment/coredns -n kube-system
+
 # Setup helm
 helm init
 kubectl rollout status deployment/tiller-deploy -n kube-system
@@ -100,7 +104,6 @@ sed "s/__BASE64SSLCERT__/$BASE64SSLCERT/g" traefik_values_t2.yaml > traefik_valu
 sed "s/__BASE64SSLPRIVATEKEY__/$BASE64SSLPRIVATEKEY/g" traefik_values_t3.yaml > traefik_values.yaml
 rm -f traefik_values_t2.yaml
 rm -f traefik_values_t3.yaml
-
 helm upgrade --install --values ./traefik_values.yaml traefik stable/traefik --namespace kube-system
 kubectl rollout status deployment/traefik --namespace kube-system
 else
