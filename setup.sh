@@ -153,8 +153,6 @@ kubectl rollout status deployment/gitlab-redis
 kubectl rollout status deployment/gitlab-gitlab-shell
 kubectl rollout status deployment/gitlab-sidekiq-all-in-1
 kubectl rollout status deployment/gitlab-unicorn
-kubectl rollout status deployment/gitlab-gitlab-runner
-
 # Remove ngnix class + provider requirements for gitlab, as we are running traefik
 if [ -z "$NGINXINGRESS" ]
 then
@@ -162,6 +160,10 @@ kubectl patch ingress gitlab-registry --type='json' -p='[{"op": "remove", "path"
 kubectl patch ingress gitlab-minio --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
 kubectl patch ingress gitlab-unicorn --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
 fi
+
+# Check that runner successfully registers, after patching unicorn, minio and registry
+kubectl rollout status deployment/gitlab-gitlab-runner
+
 # Create postgres external access
 sed "s/__IP__/$IP/g" gitlab/gitlab-postgres-external_template.yaml | kubectl create -f -
 
