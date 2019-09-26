@@ -59,7 +59,7 @@ cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry
 minikube start # --apiserver-name=kubeapi.$IP.nip.io
 
 # Wait until system is ready again
-kubectl rollout status deployment/kubernetes-dashboard -n kube-system
+kubectl rollout status deployment/kubernetes-dashboard -n kubernetes-dashboard
 kubectl rollout status deployment/coredns -n kube-system
 
 # Setup helm
@@ -115,10 +115,10 @@ kubectl rollout status deployment/nginx-ingress-controller --namespace kube-syst
 fi
 
 # Don't require auth for settings on dashboard
-kubectl patch deployment kubernetes-dashboard -n kube-system  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
+kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
 
 # List 30 items per page on dashboard as default
-kubectl apply -f dashboard-settings.yaml -n kube-system
+kubectl apply -f dashboard-settings.yaml -n kubernetes-dashboard
 # Replace __IP__ in dashboard-ingress_template.yaml
 # Create dashboard ingress
 if [ -z "$NGINXINGRESS" ]
