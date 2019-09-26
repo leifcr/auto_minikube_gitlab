@@ -17,5 +17,5 @@ spec:
         paths:
           - path: /
             backend:
-              serviceName: kubernetes-dashboard
+              serviceName: kube-system
               servicePort: 80
