@@ -8,10 +8,10 @@ set -e
 
 # Copy CA certificates
 mkdir -p ~/.minikube/certs
-cp -f ./certs/minikube-self-ca.crt ~/.minikube/certs/ca.pem
-cp -f ./certs/minikube-self-ca.key ~/.minikube/certs/ca-key.pem
-cp -f ./certs/minikube-self-ca.crt ~/.minikube/ca.crt
-cp -f ./certs/minikube-self-ca.key ~/.minikube/ca.key
+cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/certs/ca.pem
+cp -f ./certs/kubernetes-dev-self-ca.key ~/.minikube/certs/ca-key.pem
+cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/ca.crt
+cp -f ./certs/kubernetes-dev-self-ca.key ~/.minikube/ca.key
 mkdir -p ~/.minikube/files/etc/ssl/certs/
 
 
@@ -29,7 +29,7 @@ minikube status > /dev/null 2>&1
 if [ $? -ne '0' ]; then
   set -e
   echo 'Starting up minikube (will create if not existing)'
-  minikube start --memory 10240 --cpus 4 --disk-size 35g
+  minikube start --memory 10240 --cpus 4 --disk-size 35g 
 fi
 
 set -e
@@ -48,8 +48,8 @@ IP=$(minikube ip)
 minikube stop
 # Copy certs for docker engine
 mkdir -p ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io
-# cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
-cp -f ./certs/minikube-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
+# cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
+cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt
 
 # Create other certificates
 ./certs.sh $IP
@@ -64,7 +64,7 @@ kubectl rollout status deployment/coredns -n kube-system
 
 # Setup helm
 helm init
-kubectl rollout status deployment/tiller-deploy -n kube-system
+# kubectl rollout status deployment/tiller-deploy -n kube-system
 
 # Check if secret exists
 set +e
@@ -87,7 +87,7 @@ kubectl get secret ca-testing-selfsigned-tls
 if [ $? -ne '0' ]; then
   set -e
   # Store secret in kubernetes
-  kubectl create secret generic ca-testing-selfsigned-tls --from-file=minikube-self-ca.crt=./certs/minikube-self-ca.crt
+  kubectl create secret generic ca-testing-selfsigned-tls --from-file=kubernetes-dev-self-ca.crt=./certs/kubernetes-dev-self-ca.crt
 else
   set -e
 fi
@@ -96,6 +96,9 @@ fi
 if [ -z "$NGINXINGRESS" ]
 then
 echo "Installing traefik Ingress"
+helm repo add traefik https://helm.traefik.io/traefik
+helm repo update
+
 # Read certificate and key and write as base64
 BASE64SSLCERT=$(base64 ./certs/$IP-nip.fullchain.crt -w 0)
 BASE64SSLPRIVATEKEY=$(base64 ./certs/$IP-nip.key -w 0)
@@ -104,7 +107,9 @@ sed "s/__BASE64SSLCERT__/$BASE64SSLCERT/g" traefik_values_t2.yaml > traefik_valu
 sed "s/__BASE64SSLPRIVATEKEY__/$BASE64SSLPRIVATEKEY/g" traefik_values_t3.yaml > traefik_values.yaml
 rm -f traefik_values_t2.yaml
 rm -f traefik_values_t3.yaml
-helm upgrade --install --values ./traefik_values.yaml traefik stable/traefik --namespace kube-system
+# helm install traefik traefik/traefik
+
+helm upgrade --install --values ./traefik_values.yaml traefik traefik/traefik --namespace kube-system
 kubectl rollout status deployment/traefik --namespace kube-system
 else
 # If using nginx-ingress with ssl, do this:
