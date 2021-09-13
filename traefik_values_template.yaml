@@ -4,6 +4,9 @@ rbac:
 service:
   externalIPs:
     - __IP__
+ingressClass:
+  enabled: true
+  isDefaultClass: true
 ssl:
   enabled: true
   enforced: false

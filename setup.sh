@@ -14,7 +14,6 @@ cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/ca.crt
 cp -f ./certs/kubernetes-dev-self-ca.key ~/.minikube/ca.key
 mkdir -p ~/.minikube/files/etc/ssl/certs/
 
-
 # Remove nginx ssl ingress addon if using traefik
 if [ -z "$NGINXINGRESS" ]
 then
@@ -30,7 +29,7 @@ if [ $? -ne '0' ]; then
   set -e
   echo 'Starting up minikube (will create if not existing)'
   minikube start --driver=docker --memory 10240 --cpus 6 --disk-size 35g 
-  # minikube start --memory 10240 --cpus 4 --disk-size 35g 
+  # minikube start --memory 10240 --cpus 4 --disk-size 35g
 fi
 
 set -e
