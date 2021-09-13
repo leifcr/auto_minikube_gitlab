@@ -8,6 +8,16 @@ if ($confirmation -ne 'y') {
   exit
 }
 
+# Update helm repos
+
+# Add traefik
+helm repo add traefik https://helm.traefik.io/traefik
+# Add mailhog repo
+helm repo add codecentric https://codecentric.github.io/helm-char
+# Add gitlab repo
+helm repo add gitlab https://charts.gitlab.io/
+helm repo update
+
 # Create CA certificates
 ./certs_ca.ps1
 
@@ -110,7 +120,6 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
   kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
 } else {
   Write-Output "Installing traefik Ingress"
-  helm repo add traefik https://helm.traefik.io/traefik
   helm repo update
 
   # Read certificate and key and write as base64
@@ -151,7 +160,7 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
 
 # Install mailhog for e-mails from gitlab
 (Get-Content("mailhog_values_template.yaml")) -replace'__IP__', $IP | Set-Content('mailhog_values.yaml')
-helm upgrade --install --values ./mailhog_values.yaml mailhog codecentric/mailhog
+helm upgrade --install --values ./mailhog_values.yaml mailhog stable/mailhog
 
 
 # Replace __IP__ in gitlab/values-minikube_template.yaml
