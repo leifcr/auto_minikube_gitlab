@@ -8,6 +8,8 @@ service:
 
 ingress:
   enabled: true
-  path: /
+  spec:
+    ingressClassName: traefik
   hosts:
-    - mailhog.__IP__.nip.io
+    - host: mailhog.__IP__.nip.io
+      paths: ["/"]

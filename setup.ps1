@@ -13,7 +13,7 @@ if ($confirmation -ne 'y') {
 # Add traefik
 helm repo add traefik https://helm.traefik.io/traefik
 # Add mailhog repo
-helm repo add codecentric https://codecentric.github.io/helm-charts
+helm repo add leifcr https://leifcr.github.io/helm-charts
 # Add gitlab repo
 helm repo add gitlab https://charts.gitlab.io/
 helm repo update
@@ -160,11 +160,12 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
 
 # Install mailhog for e-mails from gitlab
 (Get-Content("mailhog_values_template.yaml")) -replace'__IP__', $IP | Set-Content('mailhog_values.yaml')
-helm upgrade --install --values ./mailhog_values.yaml mailhog stable/mailhog
+helm upgrade --install --values ./mailhog_values.yaml mailhog leifcr/mailhog
 
+exit
 
 # Replace __IP__ in gitlab/values-minikube_template.yaml
-(Get-Content(./gitlab/values-minikube_template.yaml)) -replace '__IP__', $IP > ./gitlab/values-minikube.yaml
+(Get-Content("./gitlab/values-minikube_template.yaml")) -replace '__IP__', $IP | Set-Content('./gitlab/values-minikube.yaml')
 
 # This has to be tested further
 # kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=$(echo kubedevelop | head -c 11)
@@ -202,6 +203,7 @@ kubectl rollout status deployment/gitlab-gitlab-runner
 # Open shell on port 2222
 (Get-Content(gitlab/gitlab-shell-service-external-ip_template.yaml)) -replace '__IP__', $IP | kubectl create -f -
 
+# TODO
 # Setup kubernetes service account for gitlab
 # ./gitlab/setup_kube_account.sh
 
