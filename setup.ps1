@@ -1,5 +1,12 @@
 # Delete certs
-# rm -rf ./certs
+# Remote-Item -LiteralPath ./certs -Force -Recurse
+
+Param($MINIKUBE_MEM=5000, $MINIKUBE_CPUS=4, $MINIKUBE_DISK='30g')
+Write-Output "Minikube config: Memory: $MINIKUBE_MEM CPUS $MINIKUBE_CPUS DISK: $MINIKUBE_DISK"
+$confirmation = Read-Host "Proceed with given configuration?"
+if ($confirmation -ne 'y') {
+  exit
+}
 
 # Create CA certificates
 ./certs_ca.ps1
@@ -17,7 +24,7 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
   Write-Output "Using internal Nginx in minikube..."
 } else {
   Write-Output "Traefik Ingress used, will remove nginx ingress ssl addon, if previously installed"
-  Remove-Item ~/.minikube/addons/ingress-ssl -Force -Recurse -SilentlyContinue
+  Remove-Item -LiteralPath ~/.minikube/addons/ingress-ssl -Force -Recurse
 }
 
 # Start minikube
@@ -25,7 +32,8 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
 minikube status
 if ($LASTEXITCODE -ne 0) {
   Write-Output 'Starting up minikube (will create if not existing)'
-  minikube start --driver=docker --memory 10240 --cpus 6 --disk-size 35g
+  # minikube start --driver=docker --memory 5000 --cpus 4 --disk-size 35g
+  minikube start --driver=docker --memory $MINIKUBE_MEM --cpus $MINIKUBE_CPUS --disk-size $MINIKUBE_DISK
   if ($LASTEXITCODE -ne 0) {
     Write-Output "Cannot start minikube, exiting..."
     exit
@@ -48,7 +56,7 @@ minikube addons enable dashboard
 # minikube addons disable ingress
 
 Write-Output "Getting IP from minikube"
-$IP=<minikube ip>
+$IP=minikube ip
 Write-Output "IP: $IP"
 
 # Stop minikube
@@ -67,7 +75,7 @@ catch {
   exit
 }
 
-# cp -f ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem
+# Copy-Item ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem -Force
 
 # Start minikube again with correct api-server-name to create correct certs for api
 minikube start # --apiserver-name=kubeapi.$IP.nip.io
@@ -97,7 +105,7 @@ if ($LASTEXITCODE -ne 0) {
 if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
   # If using nginx-ingress with ssl, do this:
   mkdir ~/.minikube/addons/ingress-ssl -ea 0
-  Get-Content(./ingress/ingress-ssl-dp_template.yaml).replace('__IP__', $IP) | Set-Content ./ingress/ingress-ssl-dp.yaml
+  (Get-Content(./ingress/ingress-ssl-dp_template.yaml)) -replace '__IP__', $IP | Set-Content ./ingress/ingress-ssl-dp.yaml
   Copy-Item ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/ -Force
   kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
 } else {
@@ -106,12 +114,19 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
   helm repo update
 
   # Read certificate and key and write as base64
-  $BASE64SSLCERT=$(base64 ./certs/$IP-nip.fullchain.crt -w 0)
-  $BASE64SSLPRIVATEKEY=$(base64 ./certs/$IP-nip.key -w 0)
-  Get-Content(traefik_values_template.yaml).replace('__IP__', $IP).replace('__BASE64SSLCERT__', $BASE64SSLCERT).replace('__BASE64SSLPRIVATEKEY__', $BASE64SSLPRIVATEKEY) | Set-Content traefik_values.yaml
+  $data = Get-Content("./certs/$IP-nip.fullchain.crt")
+  $BASE64SSLCERT= [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes( $data ) )
+  $data = Get-Content("./certs/$IP-nip.key")
+  $BASE64SSLPRIVATEKEY= [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes( $data ) )
+
+  $a = Get-Content("traefik_values_template.yaml")
+  $a.replace('__IP__', $IP).replace('__BASE64SSLCERT__', $BASE64SSLCERT).replace('__BASE64SSLPRIVATEKEY__', $BASE64SSLPRIVATEKEY) | Set-Content traefik_values.yaml
   # helm install traefik traefik/traefik
 
-  Get-Content(traefik_dashboard_template.yaml).replace('__IP__', $IP) | Set-Content traefik_dashboard.yaml
+  $a = Get-Content("traefik_dashboard_template.yaml")
+  $a.replace('__IP__', $IP) | Set-Content traefik_dashboard.yaml
+
+  Clear-Variable a
 
   helm upgrade --install --values ./traefik_values.yaml traefik traefik/traefik --namespace kube-system
   kubectl rollout status deployment/traefik --namespace kube-system
@@ -128,22 +143,19 @@ kubectl apply -f dashboard-settings.yaml -n kubernetes-dashboard
 # Create dashboard ingress
 if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
   # Ngninx
-  Get-Content(dashboard-ingress_template.yaml).replace('__IP__', $IP) | kubectl apply -n kube-system -f -
+  (Get-Content("dashboard-ingress_template.yaml")) -replace '__IP__', $IP | kubectl apply -n kube-system -f -
 } else {
   # Traefik
-  Get-Content(dashboard-ingress_traefik_template.yaml).replace('__IP__', $IP) | kubectl apply -n kube-system -f -
+  (Get-Content("dashboard-ingress_traefik_template.yaml")) -replace '__IP__', $IP | kubectl apply -n kube-system -f -
 }
 
 # Install mailhog for e-mails from gitlab
-Get-Content(mailhog_values_template.yaml).replace('__IP__', $IP) > mailhog_values.yaml
-helm upgrade --install --values ./mailhog_values.yaml mailhog stable/mailhog
+(Get-Content("mailhog_values_template.yaml")) -replace'__IP__', $IP | Set-Content('mailhog_values.yaml')
+helm upgrade --install --values ./mailhog_values.yaml mailhog codecentric/mailhog
 
-# Add gitlab repo
-helm repo add gitlab https://charts.gitlab.io/
-helm repo update
 
 # Replace __IP__ in gitlab/values-minikube_template.yaml
-Get-Content(./gitlab/values-minikube_template.yaml).replace('__IP__', $IP) > ./gitlab/values-minikube.yaml
+(Get-Content(./gitlab/values-minikube_template.yaml)) -replace '__IP__', $IP > ./gitlab/values-minikube.yaml
 
 # This has to be tested further
 # kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=$(echo kubedevelop | head -c 11)
@@ -176,10 +188,10 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
 kubectl rollout status deployment/gitlab-gitlab-runner
 
 # Create postgres external access
-Get-Content(gitlab/gitlab-postgres-external_template.yaml).replace('__IP__', $IP) | kubectl create -f -
+(Get-Content(gitlab/gitlab-postgres-external_template.yaml)) -replace '__IP__', $IP | kubectl create -f -
 
 # Open shell on port 2222
-Get-Content(gitlab/gitlab-shell-service-external-ip_template.yaml).replace('__IP__', $IP) | kubectl create -f -
+(Get-Content(gitlab/gitlab-shell-service-external-ip_template.yaml)) -replace '__IP__', $IP | kubectl create -f -
 
 # Setup kubernetes service account for gitlab
 # ./gitlab/setup_kube_account.sh
