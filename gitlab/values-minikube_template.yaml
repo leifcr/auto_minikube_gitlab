@@ -6,6 +6,7 @@
 global:
   ingress:
     configureCertmanager: false
+    class: traefik
     tls:
       secretName: wildcard-testing-selfsigned-tls-__IP__
     annotations:
@@ -13,7 +14,13 @@ global:
   hosts:
     domain: __IP__.nip.io
     externalIP: __IP__
-    https: false
+    # https: false
+
+  # # Disable Rails bootsnap cache (temporary)
+  # rails:
+  #   bootsnap:
+  #     enabled: false
+
   # Keep it simple for development. Set in secret (not here)
   # initialRootPassword: kubedevelop
   smtp:
@@ -67,9 +74,14 @@ gitlab:
   gitlab-shell:
     minReplicas: 1
     maxReplicas: 1
+    service:
+      type: NodePort
+      nodePort: 32022
+
 registry:
-  minReplicas: 1
-  maxReplicas: 1
+  hpa:
+    minReplicas: 1
+    maxReplicas: 1
   ingress:
     tls:
       enabled: true
@@ -78,5 +90,4 @@ minio:
   ingress:
     tls:
       enabled: true
-
 #       secretName: gitlab-minio-tls
