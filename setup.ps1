@@ -13,7 +13,7 @@ if ($confirmation -ne 'y') {
 # Add traefik
 helm repo add traefik https://helm.traefik.io/traefik
 # Add mailhog repo
-helm repo add codecentric https://codecentric.github.io/helm-char
+helm repo add codecentric https://codecentric.github.io/helm-charts
 # Add gitlab repo
 helm repo add gitlab https://charts.gitlab.io/
 helm repo update
