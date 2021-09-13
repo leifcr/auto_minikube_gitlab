@@ -1,12 +1,9 @@
 # values.yaml
 rbac:
   enabled: true
-dashboard:
-  enabled: true
-  domain: traefik.__IP__.nip.io
-  serviceType: NodePort
-serviceType: NodePort
-externalIP: __IP__
+service:
+  externalIPs:
+    - __IP__
 ssl:
   enabled: true
   enforced: false

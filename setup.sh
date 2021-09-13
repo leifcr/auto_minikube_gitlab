@@ -29,7 +29,8 @@ minikube status > /dev/null 2>&1
 if [ $? -ne '0' ]; then
   set -e
   echo 'Starting up minikube (will create if not existing)'
-  minikube start --memory 10240 --cpus 4 --disk-size 35g 
+  minikube start --driver=docker --memory 10240 --cpus 6 --disk-size 35g 
+  # minikube start --memory 10240 --cpus 4 --disk-size 35g 
 fi
 
 set -e
@@ -40,7 +41,8 @@ echo "\n";
 # Using own ingress (ingress-ssl)
 # minikube addons disable ingress
 minikube addons enable dashboard
-minikube addons enable heapster
+minikube addons enable metrics-server
+# minikube addons enable heapster
 # minikube addons disable ingress
 IP=$(minikube ip)
 
@@ -61,10 +63,6 @@ minikube start # --apiserver-name=kubeapi.$IP.nip.io
 # Wait until system is ready again
 kubectl rollout status deployment/kubernetes-dashboard -n kubernetes-dashboard
 kubectl rollout status deployment/coredns -n kube-system
-
-# Setup helm
-helm init
-# kubectl rollout status deployment/tiller-deploy -n kube-system
 
 # Check if secret exists
 set +e
@@ -109,8 +107,11 @@ rm -f traefik_values_t2.yaml
 rm -f traefik_values_t3.yaml
 # helm install traefik traefik/traefik
 
+sed "s/__IP__/$IP/g" traefik_dashboard_template.yaml > traefik_dashboard.yaml
+
 helm upgrade --install --values ./traefik_values.yaml traefik traefik/traefik --namespace kube-system
 kubectl rollout status deployment/traefik --namespace kube-system
+kubectl apply -f traefik_dashboard.yaml
 else
 # If using nginx-ingress with ssl, do this:
 mkdir -p ~/.minikube/addons/ingress-ssl

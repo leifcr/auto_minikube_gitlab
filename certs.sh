@@ -47,7 +47,7 @@ EOF
   openssl genrsa -out $IP-nip.key 2048
   openssl req -new -key $IP-nip.key -out $IP-nip.csr -subj "/CN=*.$IP.nip.io/O=Kubernetes Minikube Gitlab Testing./ST=Castle/L=Across Water/OU=Office/C=DK"
 
-  openssl x509 -req -in $IP-nip.csr -CA minikube-self-ca.crt -CAkey minikube-self-ca.key -CAcreateserial -out $IP-nip.crt -days 1825 -sha256 -extfile $IP-nip.ext -extensions req_ext
+  openssl x509 -req -in $IP-nip.csr -CA kubernetes-dev-self-ca.crt -CAkey kubernetes-dev-self-ca.key -CAcreateserial -out $IP-nip.crt -days 1825 -sha256 -extfile $IP-nip.ext -extensions req_ext
 
   echo "\nCertificate created for"
   echo "*.$IP.nip.io"
@@ -71,7 +71,7 @@ EOF
   echo "10.0.0.1\n"
 
   cat $IP-nip.crt > $IP-nip.fullchain.crt
-  cat minikube-self-ca.crt >> $IP-nip.fullchain.crt
+  cat kubernetes-dev-self-ca.crt >> $IP-nip.fullchain.crt
 else
   echo "Certificate already exists\n"
 fi
