@@ -1,8 +1,14 @@
-# Delete certs
-# Remote-Item -LiteralPath ./certs -Force -Recurse
+# Initial params
+Param($MINIKUBE_MEM=5000, $MINIKUBE_CPUS=4, $MINIKUBE_DISK='30g', $MINIKUBE_DRIVER='docker', $USENGINX='n')
 
-Param($MINIKUBE_MEM=5000, $MINIKUBE_CPUS=4, $MINIKUBE_DISK='30g')
-Write-Output "Minikube config: Memory: $MINIKUBE_MEM CPUS $MINIKUBE_CPUS DISK: $MINIKUBE_DISK"
+# Delete certs?
+$confirmation = Read-Host "Remove all certificates?"
+if ($confirmation -eq 'y') {
+  Remove-Item -LiteralPath ./certs -Force -Recurse
+}
+
+# Set config
+Write-Output "Minikube config: Memory: $MINIKUBE_MEM CPUS $MINIKUBE_CPUS DISK: $MINIKUBE_DISK DRIVER: $MINIKUBE_DRIVER NGINX: $USENGINX"
 $confirmation = Read-Host "Proceed with given configuration?"
 if ($confirmation -ne 'y') {
   exit
@@ -11,7 +17,9 @@ if ($confirmation -ne 'y') {
 # Update helm repos
 
 # Add traefik
-helm repo add traefik https://helm.traefik.io/traefik
+if ($USENGINX -ne 'y') {
+  helm repo add traefik https://helm.traefik.io/traefik
+}
 # Add mailhog repo
 helm repo add leifcr https://leifcr.github.io/helm-charts
 # Add gitlab repo
@@ -29,10 +37,8 @@ Copy-Item ./certs/kubernetes-dev-self-ca.crt ~/.minikube/ca.crt -Force
 Copy-Item ./certs/kubernetes-dev-self-ca.key ~/.minikube/ca.key -Force
 mkdir ~/.minikube/files/etc/ssl/certs/ -ea 0
 
-# Remove nginx ssl ingress addon if using traefik
-if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
-  Write-Output "Using internal Nginx in minikube..."
-} else {
+if ($USENGINX -ne 'y') {
+  # Traefik
   Write-Output "Traefik Ingress used, will remove nginx ingress ssl addon, if previously installed"
   Remove-Item -LiteralPath ~/.minikube/addons/ingress-ssl -Force -Recurse
 }
@@ -43,7 +49,7 @@ minikube status
 if ($LASTEXITCODE -ne 0) {
   Write-Output 'Starting up minikube (will create if not existing)'
   # minikube start --driver=docker --memory 5000 --cpus 4 --disk-size 35g
-  minikube start --driver=docker --memory $MINIKUBE_MEM --cpus $MINIKUBE_CPUS --disk-size $MINIKUBE_DISK
+  minikube start --driver=$MINIKUBE_DRIVER --memory $MINIKUBE_MEM --cpus $MINIKUBE_CPUS --disk-size $MINIKUBE_DISK
   if ($LASTEXITCODE -ne 0) {
     Write-Output "Cannot start minikube, exiting..."
     exit
@@ -103,7 +109,6 @@ if ($LASTEXITCODE -ne 0) {
   # For nginx ssl ingress
   kubectl create secret tls default-ssl-certificate --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key -n kube-system
 }
-
 kubectl get secret ca-testing-selfsigned-tls
 
 if ($LASTEXITCODE -ne 0) {
@@ -112,15 +117,21 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # If using traefik ingress, use helm chart with provided values.
-if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
-  # If using nginx-ingress with ssl, do this:
-  mkdir ~/.minikube/addons/ingress-ssl -ea 0
-  (Get-Content(./ingress/ingress-ssl-dp_template.yaml)) -replace '__IP__', $IP | Set-Content ./ingress/ingress-ssl-dp.yaml
-  Copy-Item ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/ -Force
-  kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
+if ($USENGINX -eq 'y') {
+  # # If using nginx-ingress with ssl, do this:
+  # mkdir ~/.minikube/addons/ingress-ssl -ea 0
+  # (Get-Content(./ingress/ingress-ssl-dp_template.yaml)) -replace '__IP__', $IP | Set-Content ./ingress/ingress-ssl-dp.yaml
+  # Copy-Item ./ingress/*.yaml ~/.minikube/addons/ingress-ssl/ -Force
+  # kubectl rollout status deployment/nginx-ingress-controller --namespace kube-system
+  Write-Output "Using internal Nginx in minikube..."
+  Write-Output "--------------------------------------------------------------"
+  Write-Output "Enter 'kube-system/default-ssl-certificate' without the qoutes"
+  Write-Output "--------------------------------------------------------------"
+  minikube addons configure ingress
+  Write-Output "--------------------------------------------------------------"
+  minikube addons enable ingress
 } else {
   Write-Output "Installing traefik Ingress"
-  helm repo update
 
   # Read certificate and key and write as base64
   $data = Get-Content("./certs/$IP-nip.fullchain.crt")
@@ -142,15 +153,16 @@ if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
   kubectl apply -f traefik_dashboard.yaml
 }
 
+
 # Don't require auth for settings on dashboard
 kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
-
+kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard --patch "$(Get-Content('dashboard-image-patch.yaml') -Raw)"
 # List 30 items per page on dashboard as default
-kubectl apply -f dashboard-settings.yaml -n kubernetes-dashboard
+# kubectl apply -f dashboard-settings.yaml -n kubernetes-dashboard
 
 # Replace __IP__ in dashboard-ingress_template.yaml
 # Create dashboard ingress
-if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
+if ($USENGINX -eq 'y') {
   # Ngninx
   (Get-Content("dashboard-ingress_template.yaml")) -replace '__IP__', $IP | kubectl apply -n kube-system -f -
 } else {
@@ -184,7 +196,7 @@ kubectl rollout status deployment/gitlab-gitlab-shell
 kubectl rollout status deployment/gitlab-sidekiq-all-in-1
 kubectl rollout status deployment/gitlab-unicorn
 
-if (Get-Variable -Name NGINXINGRESS -ErrorAction SilentlyContinue) {
+if ($USENGINX -eq 'y') {
   # Ngninx
 } else {
   # Remove ngnix class + provider requirements for gitlab, as we are running traefik

@@ -1,0 +1,6 @@
+spec:
+  template:
+    spec:
+      containers:
+        - name: kubernetes-dashboard
+          image: kubernetesui/dashboard:v2.3.1@sha256:e5848489963be532ec39d454ce509f2300ed8d3470bdfb8419be5d3a982bb09a

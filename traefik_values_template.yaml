@@ -4,9 +4,17 @@ rbac:
 service:
   externalIPs:
     - __IP__
+providers:
+  kubernetesCRD:
+    enabled: true
+  kubernetesIngress:
+    enabled: true
 ingressClass:
   enabled: true
   isDefaultClass: true
+ingressRoute:
+  dashboard:
+    enabled: true
 ssl:
   enabled: true
   enforced: false
