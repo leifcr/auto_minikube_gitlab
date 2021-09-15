@@ -14,6 +14,3 @@ ingress:
     - host: mailhog.__IP__.nip.io
       paths: ["/"]
       port: 8025
-    - host: mailhog.127.0.0.1.nip.io
-      paths: ["/"]
-      port: 8025

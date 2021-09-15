@@ -12,17 +12,7 @@ spec:
       services:
         - name: dashboard@internal
           kind: TraefikService
-    - match: Host(`traefik.127.0.0.1.nip.io`) && (PathPrefix(`/dashboard`)
-      kind: Rule
-      services:
-        - name: dashboard@internal
-          kind: TraefikService
     - match: Host(`traefik.__IP__.nip.io`) && (PathPrefix(`/api`)
-      kind: Rule
-      services:
-        - name: api@internal
-          kind: TraefikService
-    - match: Host(`traefik.127.0.0.1.nip.io`) && (PathPrefix(`/api`)
       kind: Rule
       services:
         - name: api@internal

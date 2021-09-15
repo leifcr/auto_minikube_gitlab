@@ -1,8 +1,6 @@
 # Initial params
 Param($MINIKUBE_MEM=5000, $MINIKUBE_CPUS=4, $MINIKUBE_DISK='30g', $MINIKUBE_DRIVER='docker', $USENGINX='n')
 
-# TODO: CHANGE ALL IP TO 127.0.0.1 for ingresses + certificates
-
 # Delete certs?
 $confirmation = Read-Host "Remove all certificates?"
 if ($confirmation -eq 'y') {
@@ -44,6 +42,25 @@ if ($USENGINX -ne 'y') {
   Write-Output "Traefik Ingress used, will remove nginx ingress ssl addon, if previously installed"
   Remove-Item -LiteralPath ~/.minikube/addons/ingress-ssl -Force -Recurse
 }
+# $IP=minikube ip
+$IP='127.0.0.1'
+Write-Output "IP: $IP"
+
+# Create other certificates
+try {
+  ./certs.ps1 $IP
+}
+catch {
+  Write-Output "Error creating certificates"
+  exit
+}
+
+# Copy-Item ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem -Force
+
+# Copy certs for docker engine
+mkdir ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io -ea 0
+# cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
+Copy-Item ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt -Force
 
 # Start minikube
 # Check if minikube is running already
@@ -73,30 +90,11 @@ minikube addons enable metrics-server
 minikube addons enable dashboard
 # minikube addons disable ingress
 
-Write-Output "Getting IP from minikube"
-$IP=minikube ip
-Write-Output "IP: $IP"
-
 # Stop minikube
-minikube stop
-# Copy certs for docker engine
-mkdir ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io -ea 0
-# cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
-Copy-Item ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt -Force
-
-# Create other certificates
-try {
-  ./certs.ps1 $IP
-}
-catch {
-  Write-Output "Error creating certificates"
-  exit
-}
-
-# Copy-Item ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem -Force
+# minikube stop
 
 # Start minikube again with correct api-server-name to create correct certs for api
-minikube start # --apiserver-name=kubeapi.$IP.nip.io
+# minikube start # --apiserver-name=kubeapi.$IP.nip.io
 
 # Wait until system is ready again
 kubectl rollout status deployment/kubernetes-dashboard -n kubernetes-dashboard
@@ -243,7 +241,7 @@ Write-Output "Remember to install the CA certs where needed (likely on your deve
 Write-Output "Also remember to set allow requests to local network in gitlab here: /admin/application_settings/network"
 Write-Output "----------------------------------------------------------------------------------------------------------"
 
-# Use tunnel instead and fiks all certificates to use 127.0.0.1.nip.io
+# Use tunnel instead and fix all certificates to use 127.0.0.1.nip.io
 # Fix dns on windows
 # After adding ingress-dns
 # minikube addons enable ingress-dns

@@ -41,8 +41,7 @@ DNS.14 = dashboard.$IP.nip.io
 DNS.15 = mailhog.$IP.nip.io
 DNS.15 = traefik.$IP.nip.io
 IP.1 = $IP
-IP.2 = 10.96.0.1
-IP.3 = 10.0.0.1
+IP.2 = 10.0.0.1
 "@ | Set-Content("$IP-nip.ext")
 
   openssl genrsa -out $IP-nip.key 2048
@@ -69,7 +68,6 @@ IP.3 = 10.0.0.1
   Write-Output "mailhog.$IP.nip.io"
   Write-Output "traefik.$IP.nip.io"
   Write-Output "$IP"
-  Write-Output "10.96.0.1"
   Write-Output "10.0.0.1"
   Write-Output ""
 

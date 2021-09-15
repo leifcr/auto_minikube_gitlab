@@ -22,13 +22,3 @@ spec:
                 name: kubernetes-dashboard
                 port:
                   number: 80
-    - host: dashboard.127.0.0.1.nip.io
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: kubernetes-dashboard
-                port:
-                  number: 80
