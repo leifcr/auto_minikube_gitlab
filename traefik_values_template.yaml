@@ -1,9 +1,9 @@
 # values.yaml
 rbac:
   enabled: true
-service:
-  externalIPs:
-    - __IP__
+# service:
+#   externalIPs:
+#     - __IP__
 providers:
   kubernetesCRD:
     enabled: true
@@ -20,3 +20,8 @@ ssl:
   enforced: false
   defaultCert: __BASE64SSLCERT__
   defaultKey: __BASE64SSLPRIVATEKEY__
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true

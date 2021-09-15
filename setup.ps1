@@ -1,6 +1,8 @@
 # Initial params
 Param($MINIKUBE_MEM=5000, $MINIKUBE_CPUS=4, $MINIKUBE_DISK='30g', $MINIKUBE_DRIVER='docker', $USENGINX='n')
 
+# TODO: CHANGE ALL IP TO 127.0.0.1 for ingresses + certificates
+
 # Delete certs?
 $confirmation = Read-Host "Remove all certificates?"
 if ($confirmation -eq 'y') {
@@ -148,8 +150,8 @@ if ($USENGINX -eq 'y') {
 
   Clear-Variable a
 
-  helm upgrade --install --values ./traefik_values.yaml traefik traefik/traefik --namespace kube-system
-  kubectl rollout status deployment/traefik --namespace kube-system
+  helm upgrade --install --values ./traefik_values.yaml traefik traefik/traefik
+  kubectl rollout status deployment/traefik
   kubectl apply -f traefik_dashboard.yaml
 }
 
@@ -167,7 +169,7 @@ if ($USENGINX -eq 'y') {
   (Get-Content("dashboard-ingress_template.yaml")) -replace '__IP__', $IP | kubectl apply -n kube-system -f -
 } else {
   # Traefik
-  (Get-Content("dashboard-ingress_traefik_template.yaml")) -replace '__IP__', $IP | kubectl apply -n kube-system -f -
+  (Get-Content("dashboard-ingress_traefik_template.yaml")) -replace '__IP__', $IP | kubectl apply -n kubernetes-dashboard -f -
 }
 
 # Install mailhog for e-mails from gitlab
@@ -240,3 +242,11 @@ Write-Output "------------------------------------------------------------------
 Write-Output "Remember to install the CA certs where needed (likely on your devel computer)"
 Write-Output "Also remember to set allow requests to local network in gitlab here: /admin/application_settings/network"
 Write-Output "----------------------------------------------------------------------------------------------------------"
+
+# Use tunnel instead and fiks all certificates to use 127.0.0.1.nip.io
+# Fix dns on windows
+# After adding ingress-dns
+# minikube addons enable ingress-dns
+# remove dns
+# Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClientNrptRule -Force
+# Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClientNrptRule -Force; Add-DnsClientNrptRule -Namespace ".test" -NameServers "$(minikube ip)"
