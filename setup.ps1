@@ -31,7 +31,7 @@ if ($USENGINX -ne 'y') {
   helm repo add traefik https://helm.traefik.io/traefik
 }
 # Add mailhog repo
-helm repo add leifcr https://leifcr.github.io/helm-charts
+helm repo add mailhog https://leifcr.github.io/codecentric-helm-charts
 # Add gitlab repo
 helm repo add gitlab https://charts.gitlab.io/
 helm repo update
@@ -165,9 +165,11 @@ if ($USENGINX -eq 'y') {
   kubectl apply -f traefik_dashboard.yaml
 }
 
-
+# patches moved to yaml patch
 # Don't require auth for settings on dashboard
-kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
+# kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--disable-settings-authorizer]}]'
+# Patch args - See https://github.com/kubernetes/dashboard/issues/4938
+# kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard  --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": [--namespace=kubernetes-dashboard]}]'
 kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard --patch "$(Get-Content('dashboard-image-patch.yaml') -Raw)"
 # List 30 items per page on dashboard as default
 # kubectl apply -f dashboard-settings.yaml -n kubernetes-dashboard
@@ -184,7 +186,7 @@ if ($USENGINX -eq 'y') {
 
 # Install mailhog for e-mails from gitlab
 (Get-Content("mailhog_values_template.yaml")) -replace'__IP__', $IP | Set-Content('mailhog_values.yaml')
-helm upgrade --install --values ./mailhog_values.yaml mailhog leifcr/mailhog
+helm upgrade --install --values ./mailhog_values.yaml mailhog mailhog/mailhog
 
 exit
 
