@@ -1,5 +1,4 @@
 service:
-  externalIPs: [ "__IP__" ]
   port:
     http: 8025
     smtp: 1025

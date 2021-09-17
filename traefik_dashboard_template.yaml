@@ -7,12 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`traefik.__IP__.nip.io`) && (PathPrefix(`/dashboard`)
-      kind: Rule
-      services:
-        - name: dashboard@internal
-          kind: TraefikService
-    - match: Host(`traefik.__IP__.nip.io`) && (PathPrefix(`/api`)
+    - match: Host(`traefik.__IP__.nip.io`)
       kind: Rule
       services:
         - name: api@internal

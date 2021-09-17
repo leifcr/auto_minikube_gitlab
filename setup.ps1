@@ -181,7 +181,7 @@ exit
 
 # This has to be tested further
 # kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=$(echo kubedevelop | head -c 11)
-kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password=kubedevelop
+kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal=password='kubedevelop'
 
 # Install gitlab using helm
 # Use CE version
