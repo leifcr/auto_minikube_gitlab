@@ -1,10 +1,20 @@
 # Initial params
-Param($MINIKUBE_MEM=5000, $MINIKUBE_CPUS=4, $MINIKUBE_DISK='30g', $MINIKUBE_DRIVER='docker', $USENGINX='n')
+Param($MINIKUBE_MEM=15000, $MINIKUBE_CPUS=6, $MINIKUBE_DISK='35g', $MINIKUBE_DRIVER='docker', $USENGINX='n')
 
-# Delete certs?
-$confirmation = Read-Host "Remove all certificates?"
+# Total cleanup?
+$confirmation = Read-Host "Delete previous minikube and remove all certificates?"
 if ($confirmation -eq 'y') {
-  Remove-Item -LiteralPath ./certs -Force -Recurse
+  minikube status
+  if ($LASTEXITCODE -ne 0) {
+    Write-Output "Minikube not running, nothing to stop, will delete if existing"
+    minikube delete
+  } else {
+    Write-Output "Minikube running, will stop, then delete"
+    minikube stop && minikube delete
+  }
+  if (Test-Path './certs' -PathType container) {
+    Remove-Item -LiteralPath ./certs -Force -Recurse
+  }
 }
 
 # Set config
@@ -39,8 +49,10 @@ mkdir ~/.minikube/files/etc/ssl/certs/ -ea 0
 
 if ($USENGINX -ne 'y') {
   # Traefik
-  Write-Output "Traefik Ingress used, will remove nginx ingress ssl addon, if previously installed"
-  Remove-Item -LiteralPath ~/.minikube/addons/ingress-ssl -Force -Recurse
+  if (Test-Path '~/.minikube/addons/ingress-ssl' -PathType container) {
+    Write-Output "Traefik Ingress used, will remove nginx ingress ssl addon, as it has been found enabled"
+    Remove-Item -LiteralPath ~/.minikube/addons/ingress-ssl -Force -Recurse
+  }
 }
 # $IP=minikube ip
 $IP='127.0.0.1'
