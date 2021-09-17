@@ -1,6 +1,13 @@
 # Initial params
 Param($MINIKUBE_MEM=15000, $MINIKUBE_CPUS=6, $MINIKUBE_DISK='35g', $MINIKUBE_DRIVER='docker', $USENGINX='n')
 
+# Set config
+Write-Output "Minikube config: Memory: $MINIKUBE_MEM CPUS $MINIKUBE_CPUS DISK: $MINIKUBE_DISK DRIVER: $MINIKUBE_DRIVER NGINX: $USENGINX"
+$confirmation = Read-Host "Proceed with given configuration?"
+if ($confirmation -ne 'y') {
+  exit
+}
+
 # Total cleanup?
 $confirmation = Read-Host "Delete previous minikube and remove all certificates?"
 if ($confirmation -eq 'y') {
@@ -15,13 +22,6 @@ if ($confirmation -eq 'y') {
   if (Test-Path './certs' -PathType container) {
     Remove-Item -LiteralPath ./certs -Force -Recurse
   }
-}
-
-# Set config
-Write-Output "Minikube config: Memory: $MINIKUBE_MEM CPUS $MINIKUBE_CPUS DISK: $MINIKUBE_DISK DRIVER: $MINIKUBE_DRIVER NGINX: $USENGINX"
-$confirmation = Read-Host "Proceed with given configuration?"
-if ($confirmation -ne 'y') {
-  exit
 }
 
 # Update helm repos
