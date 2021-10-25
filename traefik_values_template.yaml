@@ -22,6 +22,6 @@ ssl:
   defaultKey: __BASE64SSLPRIVATEKEY__
 logs:
   general:
-    level: INFO
+    level: DEBUG
   access:
     enabled: true
