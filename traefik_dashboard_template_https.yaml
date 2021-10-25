@@ -1,0 +1,14 @@
+# dashboard.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dashboard
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.__IP__.nip.io`)
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService
