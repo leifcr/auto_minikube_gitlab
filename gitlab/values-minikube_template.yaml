@@ -44,9 +44,10 @@ prometheus:
 # GitLab Runner isn't a big fan of self-signed certificates
 gitlab-runner:
   install: true
-  gitlabUrl: http://gitlab.__IP__.nip.io
+  gitlabUrl: https://gitlab.__IP__.nip.io
   unregisterRunners: true
-  certsSecretName: ca-testing-selfsigned-tls
+  certsSecretName: gitlab_runner_self_signed
+  # certssecretName: wildcard-testing-selfsigned-tls-__IP__
   rbac:
     create: true
   metrics:

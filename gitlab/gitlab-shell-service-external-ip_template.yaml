@@ -11,4 +11,6 @@ spec:
     port: 2222
     protocol: TCP
     targetPort: 2222
+  externalIPs:
+    - __IP__
   type: NodePort

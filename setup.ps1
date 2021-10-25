@@ -1,5 +1,5 @@
 # Initial params
-Param($MINIKUBE_MEM=15000, $MINIKUBE_CPUS=6, $MINIKUBE_DISK='35g', $MINIKUBE_DRIVER='docker', $USENGINX='n')
+Param($MINIKUBE_MEM=16000, $MINIKUBE_CPUS=8, $MINIKUBE_DISK='35g', $MINIKUBE_DRIVER='hyperv', $USENGINX='n')
 
 # Set config
 Write-Output "Minikube config: Memory: $MINIKUBE_MEM CPUS $MINIKUBE_CPUS DISK: $MINIKUBE_DISK DRIVER: $MINIKUBE_DRIVER NGINX: $USENGINX"
@@ -54,25 +54,27 @@ if ($USENGINX -ne 'y') {
     Remove-Item -LiteralPath ~/.minikube/addons/ingress-ssl -Force -Recurse
   }
 }
-# $IP=minikube ip
-$IP='127.0.0.1'
-Write-Output "IP: $IP"
-
-# Create other certificates
-try {
-  ./certs.ps1 $IP
-}
-catch {
-  Write-Output "Error creating certificates"
-  exit
-}
 
 # Copy-Item ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem -Force
 
-# Copy certs for docker engine
-mkdir ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io -ea 0
-# cp -f ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.crt
-Copy-Item ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt -Force
+# Create certs first if using docker. Note: gitlab runner will not work, and you cannot deploy from gitlab to minikube...
+if ($MINIKUBE_DRIVER -eq 'docker') {
+  $IP='127.0.0.1'
+  Write-Output "IP: $IP"
+  # Create other certificates
+  try {
+    ./certs.ps1 $IP
+  }
+  catch {
+    Write-Output "Error creating certificates"
+    exit
+  }
+  # Copy-Item ./certs/$IP-nip.crt ~/.minikube/files/etc/ssl/certs/registry.$IP.nip.io.pem -Force
+
+  # Copy certs for docker engine
+  mkdir ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io -ea 0
+  Copy-Item ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt -Force
+}
 
 # Start minikube
 # Check if minikube is running already
@@ -80,11 +82,30 @@ minikube status
 if ($LASTEXITCODE -ne 0) {
   Write-Output 'Starting up minikube (will create if not existing)'
   # minikube start --driver=docker --memory 5000 --cpus 4 --disk-size 35g
-  minikube start --driver=$MINIKUBE_DRIVER --memory $MINIKUBE_MEM --cpus $MINIKUBE_CPUS --disk-size $MINIKUBE_DISK
+  if ($MINIKUBE_DRIVER -eq 'hyperv') {
+    minikube start --driver=$MINIKUBE_DRIVER --memory $MINIKUBE_MEM --cpus $MINIKUBE_CPUS --disk-size $MINIKUBE_DISK --hyperv-use-external-switch
+  } else {
+    minikube start --driver=$MINIKUBE_DRIVER --memory $MINIKUBE_MEM --cpus $MINIKUBE_CPUS --disk-size $MINIKUBE_DISK
+  }
   if ($LASTEXITCODE -ne 0) {
     Write-Output "Cannot start minikube, exiting..."
     exit
   }
+}
+
+if ($MINIKUBE_DRIVER -ne 'docker') {
+  $IP=minikube ip
+  ./certs.ps1 $IP
+  Write-Output "Generating certificats for ip $IP";
+  Write-Output "Stopping minikube..."
+  minikube stop
+
+  # Copy certs for docker engine
+  mkdir ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io -ea 0
+  Copy-Item ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt -Force
+
+  Write-Output "Starting minikube again..."
+  minikube start
 }
 
 # Ensure minikube is running before going forward
@@ -121,11 +142,18 @@ if ($LASTEXITCODE -ne 0) {
   # For nginx ssl ingress
   kubectl create secret tls default-ssl-certificate --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key -n kube-system
 }
-kubectl get secret ca-testing-selfsigned-tls
 
+kubectl get secret ca-testing-selfsigned-tls
 if ($LASTEXITCODE -ne 0) {
   # Store secret in kubernetes
   kubectl create secret generic ca-testing-selfsigned-tls --from-file=kubernetes-dev-self-ca.crt=./certs/kubernetes-dev-self-ca.crt
+}
+
+kubectl get secret gitlab-runner-self-signed
+if ($LASTEXITCODE -ne 0) {
+  # Store secret in kubernetes
+  kubectl create secret generic gitlab-runner-self-signed --from-file=gitlab.$IP.nip.io.crt=./certs/kubernetes-dev-self-ca.crt
+  kubectl create secret generic gitlab-runner-self-signed --from-file=gitlab.10.75.2.239.nip.io.crt=./certs/kubernetes-dev-self-ca.crt
 }
 
 # If using traefik ingress, use helm chart with provided values.
@@ -205,8 +233,6 @@ if ($USENGINX -eq 'y') {
 (Get-Content("mailhog_values_template.yaml")) -replace'__IP__', $IP | Set-Content('mailhog_values.yaml')
 helm upgrade --install --values ./mailhog_values.yaml mailhog mailhog/mailhog
 
-exit
-
 # Replace __IP__ in gitlab/values-minikube_template.yaml
 (Get-Content("./gitlab/values-minikube_template.yaml")) -replace '__IP__', $IP | Set-Content('./gitlab/values-minikube.yaml')
 
@@ -228,34 +254,23 @@ kubectl rollout status deployment/gitlab-registry
 kubectl rollout status deployment/gitlab-sidekiq-all-in-1-v1
 kubectl rollout status deployment/gitlab-webservice-default
 
-if ($USENGINX -eq 'y') {
-  # Ngninx
-} else {
-  # Remove ngnix class + provider requirements for gitlab, as we are running traefik
-  # Traefik
-  kubectl patch ingress gitlab-registry --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
-  kubectl patch ingress gitlab-minio --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
-  kubectl patch ingress gitlab-unicorn --type='json' -p='[{"op": "remove", "path": "/metadata/annotations"}]'
-}
-
 # Check that runner successfully registers, after patching unicorn, minio and registry
 kubectl rollout status deployment/gitlab-gitlab-runner
 
 # Create postgres external access
-(Get-Content(gitlab/gitlab-postgres-external_template.yaml)) -replace '__IP__', $IP | kubectl create -f -
+(Get-Content("gitlab\gitlab-postgres-external_template.yaml")) -replace '__IP__', $IP | kubectl create -f -
 
 # Open shell on port 2222
-(Get-Content(gitlab/gitlab-shell-service-external-ip_template.yaml)) -replace '__IP__', $IP | kubectl create -f -
+(Get-Content("gitlab\gitlab-shell-service-external-ip_template.yaml")) -replace '__IP__', $IP | kubectl create -f -
 
-# TODO
 # Setup kubernetes service account for gitlab
-# ./gitlab/setup_kube_account.sh
+.\gitlab\setup_kube_account.ps1
 
 # Print gitlab info
-# ./gitlab/gitlab_info.sh
+.\gitlab\gitlab_info.ps1
 
 # Print gitlab kubernetes integration info
-# ./gitlab/setup_info.sh
+.\gitlab\setup_info.ps1
 
 Write-Output "----------------------------------------------------------------------------------------------------------"
 Write-Output "Domains for test apps:"
