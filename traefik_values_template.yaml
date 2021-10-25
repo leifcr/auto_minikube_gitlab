@@ -48,6 +48,3 @@ ports:
             - dashboard.__IP__.nip.io
             - mailhog.__IP__.nip.io
             - traefik.__IP__.nip.io
-
-# defaultCert: __BASE64SSLCERT__
-# defaultKey: __BASE64SSLPRIVATEKEY__
