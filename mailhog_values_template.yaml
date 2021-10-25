@@ -9,6 +9,13 @@ ingress:
   enabled: true
   spec:
     ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
   hosts:
     - host: mailhog.__IP__.nip.io
       paths: ["/"]
+  tls:
+    - secretName: wildcard-testing-selfsigned-tls-__IP__
+      hosts:
+        - mailhog.__IP__.nip.io

@@ -4,5 +4,7 @@ gitlab/values-minikube.yaml
 gitlab-runner-secret.yaml
 mailhog_values.yaml
 traefik_values.yaml
-traefik_dashboard.yaml
+traefik_dashboard_http.yaml
+traefik_dashboard_https.yaml
+traefik_default_tls_store.yaml
 app1/*

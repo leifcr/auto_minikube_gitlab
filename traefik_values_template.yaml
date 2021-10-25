@@ -15,13 +15,39 @@ ingressClass:
 ingressRoute:
   dashboard:
     enabled: true
-ssl:
-  enabled: true
-  enforced: false
-  defaultCert: __BASE64SSLCERT__
-  defaultKey: __BASE64SSLPRIVATEKEY__
 logs:
   general:
     level: DEBUG
   access:
     enabled: true
+
+ports:
+  web:
+    redirectTo: websecure
+
+  websecure:
+    tls:
+      enabled: true
+      domains:
+        - main: __IP__.nip.io
+          sans:
+            - '*.production.__IP__.nip.io'
+            - '*.staging.__IP__.nip.io'
+            - '*.development.__IP__.nip.io'
+            - '*.gitlab.__IP__.nip.io'
+            - production.__IP__.nip.io
+            - staging.__IP__.nip.io
+            - development.__IP__.nip.io
+            - gitlab.__IP__.nip.io
+            - minio.__IP__.nip.io
+            - registry.__IP__.nip.io
+            - app1.__IP__.nip.io
+            - app2.__IP__.nip.io
+            - service1.__IP__.nip.io
+            - service2.__IP__.nip.io
+            - dashboard.__IP__.nip.io
+            - mailhog.__IP__.nip.io
+            - traefik.__IP__.nip.io
+
+# defaultCert: __BASE64SSLCERT__
+# defaultKey: __BASE64SSLPRIVATEKEY__

@@ -7,14 +7,17 @@ global:
   ingress:
     configureCertmanager: false
     class: traefik
+    provider: traefik
     tls:
       secretName: wildcard-testing-selfsigned-tls-__IP__
     annotations:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
   hosts:
     domain: __IP__.nip.io
     # externalIP: __IP__
-    # https: false
+    https: true
 
   # # Disable Rails bootsnap cache (temporary)
   # rails:
@@ -61,12 +64,9 @@ gitlab-runner:
 
 # Reduce replica counts, reducing CPU & memory requirements
 gitlab:
-  unicorn:
+  webservice:
     minReplicas: 1
     maxReplicas: 1
-    ingress:
-      tls:
-        enabled: true
     #     secretName: gitlab-unicorn-tls
   sidekiq:
     minReplicas: 1

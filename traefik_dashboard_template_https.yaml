@@ -2,7 +2,7 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: dashboard
+  name: dashboard-https
 spec:
   entryPoints:
     - websecure
@@ -12,3 +12,8 @@ spec:
       services:
         - name: api@internal
           kind: TraefikService
+
+  tls:
+    domains:
+    - main: traefik.__IP__.nip.io
+    secretName: wildcard-testing-selfsigned-tls-__IP__

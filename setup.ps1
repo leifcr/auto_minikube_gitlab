@@ -155,14 +155,31 @@ if ($USENGINX -eq 'y') {
   $a.replace('__IP__', $IP).replace('__BASE64SSLCERT__', $BASE64SSLCERT).replace('__BASE64SSLPRIVATEKEY__', $BASE64SSLPRIVATEKEY) | Set-Content traefik_values.yaml
   # helm install traefik traefik/traefik
 
-  $a = Get-Content("traefik_dashboard_template.yaml")
-  $a.replace('__IP__', $IP) | Set-Content traefik_dashboard.yaml
-
   Clear-Variable a
 
   helm upgrade --install --values ./traefik_values.yaml traefik traefik/traefik
   kubectl rollout status deployment/traefik
-  kubectl apply -f traefik_dashboard.yaml
+
+  Write-Output "Adding dashboard ingresses (both http and https)"
+  $a = Get-Content("traefik_dashboard_template_http.yaml")
+  $a.replace('__IP__', $IP) | Set-Content traefik_dashboard_http.yaml
+
+  Clear-Variable a
+
+  $a = Get-Content("traefik_dashboard_template_https.yaml")
+  $a.replace('__IP__', $IP) | Set-Content traefik_dashboard_https.yaml
+
+  Clear-Variable a
+
+  kubectl apply -f traefik_dashboard_http.yaml
+  kubectl apply -f traefik_dashboard_https.yaml
+
+  Write-Output "Writing default certificate"
+
+  $a = Get-Content("traefik_default_tls_store_template.yaml")
+  $a.replace('__IP__', $IP) | Set-Content traefik_default_tls_store.yaml
+  Clear-Variable a
+  kubectl apply -f traefik_default_tls_store.yaml
 }
 
 # patches moved to yaml patch
@@ -199,16 +216,17 @@ kubectl create secret generic gitlab-gitlab-initial-root-password --from-literal
 
 # Install gitlab using helm
 # Use CE version
-helm upgrade --install gitlab gitlab/gitlab --values ./gitlab/values-minikube.yaml --set gitlab.migrations.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-rails-ce --set gitlab.sidekiq.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-sidekiq-ce --set gitlab.unicorn.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-unicorn-ce --set gitlab.unicorn.workhorse.image=registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce --set gitlab.task-runner.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-task-runner-ce
+# helm upgrade --install gitlab gitlab/gitlab --values ./gitlab/values-minikube.yaml --set gitlab.migrations.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-rails-ce --set gitlab.sidekiq.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-sidekiq-ce --set gitlab.unicorn.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-unicorn-ce --set gitlab.unicorn.workhorse.image=registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce --set gitlab.task-runner.image.repository=registry.gitlab.com/gitlab-org/build/cng/gitlab-task-runner-ce
+helm upgrade --install gitlab gitlab/gitlab --values ./gitlab/values-minikube.yaml
 
 # Wait for gitlab rollout to finish
-kubectl rollout status deployment/gitlab-postgresql
+kubectl rollout status statefulset/gitlab-postgresql
 kubectl rollout status deployment/gitlab-minio
-kubectl rollout status deployment/gitlab-registry
-kubectl rollout status deployment/gitlab-redis
+kubectl rollout status statefulset/gitlab-redis-master
 kubectl rollout status deployment/gitlab-gitlab-shell
-kubectl rollout status deployment/gitlab-sidekiq-all-in-1
-kubectl rollout status deployment/gitlab-unicorn
+kubectl rollout status deployment/gitlab-registry
+kubectl rollout status deployment/gitlab-sidekiq-all-in-1-v1
+kubectl rollout status deployment/gitlab-webservice-default
 
 if ($USENGINX -eq 'y') {
   # Ngninx
