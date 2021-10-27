@@ -105,7 +105,7 @@ if ($MINIKUBE_DRIVER -ne 'docker') {
   Copy-Item ./certs/kubernetes-dev-self-ca.crt ~/.minikube/files/etc/docker/certs.d/registry.$IP.nip.io/ca.crt -Force
 
   Write-Output "Starting minikube again..."
-  minikube start
+  minikube start --embed-certs
 }
 
 # Ensure minikube is running before going forward
@@ -152,8 +152,7 @@ if ($LASTEXITCODE -ne 0) {
 kubectl get secret gitlab-runner-self-signed
 if ($LASTEXITCODE -ne 0) {
   # Store secret in kubernetes
-  kubectl create secret generic gitlab-runner-self-signed --from-file=gitlab.$IP.nip.io.crt=./certs/kubernetes-dev-self-ca.crt
-  kubectl create secret generic gitlab-runner-self-signed --from-file=gitlab.10.75.2.239.nip.io.crt=./certs/kubernetes-dev-self-ca.crt
+  kubectl create secret generic gitlab-runner-self-signed --from-file=gitlab.$IP.nip.io.crt=./certs/kubernetes-dev-self-ca.crt --from-file=registry.$IP.nip.io.crt=./certs/kubernetes-dev-self-ca.crt
 }
 
 # If using traefik ingress, use helm chart with provided values.
