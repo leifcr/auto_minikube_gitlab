@@ -1,9 +1,9 @@
 $IP=$(minikube ip)
-$token_name = kubectl get secrets | Select-String('default-token')
-$token_name = $token_name -split " " | Select-String('default-token')
-$token = $(kubectl get secret $token_name -o jsonpath="{.data.token}")
+$token_name = kubectl get secrets -n kube-system | Select-String('gitlab-token')
+$token_name = $token_name -split " " | Select-String('gitlab-token')
+$token = $(kubectl get secret $token_name -o jsonpath="{.data.token}" -n kube-system)
 $token = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($token))
-$ca = $(kubectl get secret $token_name -o jsonpath="{.data.ca\.crt}")
+$ca = $(kubectl get secret $token_name -o jsonpath="{.data.ca\.crt}" -n kube-system)
 $ca = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($ca))
 
 Write-Output "Information for gitlab setup of kubernetes cluster"
