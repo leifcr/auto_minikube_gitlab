@@ -1,9 +1,9 @@
 # values.yaml
 rbac:
   enabled: true
-# service:
-#   externalIPs:
-#     - __IP__
+service:
+  externalIPs:
+    - __IP__
 providers:
   kubernetesCRD:
     enabled: true
@@ -20,6 +20,8 @@ logs:
     level: DEBUG
   access:
     enabled: true
+  headers:
+    defaultMode: keep
 
 ports:
   web:
