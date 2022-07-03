@@ -46,7 +46,7 @@ gitlab-runner:
   install: true
   gitlabUrl: https://gitlab.__IP__.nip.io
   unregisterRunners: true
-  certsSecretName: gitlab_runner_self_signed
+  certsSecretName: gitlab-runner-certs
   # certssecretName: wildcard-testing-selfsigned-tls-__IP__
   rbac:
     create: true

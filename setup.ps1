@@ -34,6 +34,7 @@ if ($USENGINX -ne 'y') {
 helm repo add mailhog https://leifcr.github.io/codecentric-helm-charts
 # Add gitlab repo
 helm repo add gitlab https://charts.gitlab.io/
+helm repo add leifcr-gitlab-agent https://gitlab.com/api/v4/projects/37515071/packages/helm/stable
 helm repo update
 
 # Create CA certificates
@@ -139,6 +140,9 @@ if ($LASTEXITCODE -ne 0) {
   # Store secret in kubernetes
   kubectl create secret tls wildcard-testing-selfsigned-tls-$IP --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key
   kubectl create secret tls wildcard-testing-selfsigned-tls-$IP --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key -n kube-system
+  # For gitlab-runner
+  kubectl create secret generic gitlab-runner-certs --from-file=gitlab.$IP.nip.io.crt=./certs/$IP-nip.fullchain.crt
+
   # For nginx ssl ingress
   kubectl create secret tls default-ssl-certificate --cert=./certs/$IP-nip.fullchain.crt --key=./certs/$IP-nip.key -n kube-system
 }
@@ -147,6 +151,15 @@ kubectl get secret ca-testing-selfsigned-tls
 if ($LASTEXITCODE -ne 0) {
   # Store secret in kubernetes
   kubectl create secret generic ca-testing-selfsigned-tls --from-file=kubernetes-dev-self-ca.crt=./certs/kubernetes-dev-self-ca.crt
+}
+
+# This can give an error, but error can be ignored
+kubectl create namespace gitlab-agent
+# Create namespace for gitlab-agent and apply cert there
+kubectl get secret ca-testing-selfsigned-tls --namespace gitlab-agent
+if ($LASTEXITCODE -ne 0) {
+  # Store secret in kubernetes
+  kubectl create configmap self-signed-ca-cert.crt --from-file=self-signed-ca-cert.crt=./certs/kubernetes-dev-self-ca.crt --namespace gitlab-agent
 }
 
 kubectl get secret gitlab-runner-self-signed
@@ -268,8 +281,27 @@ kubectl rollout status deployment/gitlab-gitlab-runner
 # Print gitlab info
 .\gitlab\gitlab_info.ps1
 
-# Print gitlab kubernetes integration info
-.\gitlab\setup_info.ps1
+# Token setup is deprecated...
+# .\gitlab\setup_info.ps1
+Write-Output "----------------------------------------------------------------------------------------------------------"
+Write-Output "Remember to deploy gitlab-agent, as token setup is deprecated"
+Write-Outout "Note: The current gitlab repo has poor support for self signed certificates. Using leifcr repo instead"
+Write-Outout "The current certificate is written to self-signed-ca-cert.crt (configmap)"
+Write-Output "1. Create a group Example: 'test-group'"
+Write-Output "2. Create a project called 'gitlab-agent'"
+Write-Output "3. Create config.yaml with the following content in folder .gitlab/agent/test-kubernetes-cluster-agent"
+Write-Output "ci_access:"
+Write-Output "  groups:"
+Write-Output "    - id: test-group"
+Write-Output "4. Push the repository"
+Write-Output "5. Goto the repository, click 'Infrastructure -> Kubernetes clusters -> Connect a cluster'"
+Write-Output "6. Select 'test-kubernetes-cluster-agent'"
+Write-Output "7. Copy the token to somewhere, as you need it to register the agent"
+Write-Output "8. Install the agent with helm"
+Write-Output "9. Add leifcr-gitlab-agent helm chart to support self signed certificates (This script has added it)"
+Write-Output "Command 'helm upgrade --install test-kubernetes-cluster-agent leifr-gitlab-agent/gitlab-agent --namespace gitlab-agent --create-namespace --set image.tag=v15.1.0 --set config.token=PASTE_THE_TOKEN_HERE --set config.kasAddress=wss://kas.$IP.nip.io --set config.caCert='self-signed-ca-cert.crt'"
+Write-Output "This config gives access to all projects under 'test-group' to enable kubernetes integration"
+Write-Output "----------------------------------------------------------------------------------------------------------"
 
 Write-Output "----------------------------------------------------------------------------------------------------------"
 Write-Output "Domains for test apps:"
