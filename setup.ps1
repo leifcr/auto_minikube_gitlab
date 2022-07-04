@@ -299,7 +299,7 @@ Write-Output "6. Select 'test-kubernetes-cluster-agent'"
 Write-Output "7. Copy the token to somewhere, as you need it to register the agent"
 Write-Output "8. Install the agent with helm"
 Write-Output "9. Add leifcr-gitlab-agent helm chart to support self signed certificates (This script has added it)"
-Write-Output "Command 'helm upgrade --install test-kubernetes-cluster-agent leifr-gitlab-agent/gitlab-agent --namespace gitlab-agent --create-namespace --set image.tag=v15.1.0 --set config.token=PASTE_THE_TOKEN_HERE --set config.kasAddress=wss://kas.$IP.nip.io --set config.caCert='self-signed-ca-cert.crt'"
+Write-Output "Command 'helm upgrade --install test-kubernetes-cluster-agent leifcr-gitlab-agent/gitlab-agent --namespace gitlab-agent --create-namespace --set image.tag=v15.1.0 --set config.token=PASTE_THE_TOKEN_HERE --set config.kasAddress=wss://kas.$IP.nip.io --set config.caCert='self-signed-ca-cert.crt'"
 Write-Output "This config gives access to all projects under 'test-group' to enable kubernetes integration"
 Write-Output "----------------------------------------------------------------------------------------------------------"
 
